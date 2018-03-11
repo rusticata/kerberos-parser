@@ -1,0 +1,18 @@
+[package]
+description = "Parser for the Kerberos protocol"
+license = "MIT/Apache-2.0"
+keywords = ["Kerberos","parser","nom"]
+homepage = "https://github.com/rusticata/kerberos-parser"
+repository = "https://github.com/rusticata/kerberos-parser.git"
+name = "kerberos-parser"
+version = "0.1.0"
+authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
+categories = ["parsing"]
+
+[dependencies]
+nom = "3.2.1"
+rusticata-macros = "0.4"
+der-parser = { version="0.5.2", git="https://github.com/rusticata/der-parser.git" }
+
+[badges]
+travis-ci = { repository = "rusticata/kerberos-parser" }
