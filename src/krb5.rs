@@ -85,3 +85,14 @@ pub struct HostAddress<'a> {
     pub address: &'a[u8],
 }
 
+/// Key Distribution Center (KDC) Reply Message
+#[derive(Debug, PartialEq)]
+pub struct KdcRep<'a> {
+    pub pvno: u32,
+    pub msg_type: u32,
+    pub padata: Vec<DerObject<'a>>,
+    pub crealm: Realm,
+    pub cname: PrincipalName,
+    pub ticket: Ticket<'a>,
+    pub enc_part: EncryptedData<'a>,
+}

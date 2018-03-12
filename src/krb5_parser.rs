@@ -305,3 +305,81 @@ pub fn parse_as_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
         req: parse_kdc_req >> (req)
     ).map(|t| t.1)
 }
+
+/// Parse of a Kerberos TGS Request
+///
+/// <pre>
+/// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
+/// </pre>
+pub fn parse_tgs_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 12,
+        req: parse_kdc_req >> (req)
+    ).map(|t| t.1)
+}
+
+/// Parse a Kerberos KDC Reply
+///
+/// <pre>
+/// KDC-REP         ::= SEQUENCE {
+///         pvno            [0] INTEGER (5),
+///         msg-type        [1] INTEGER (11 -- AS -- | 13 -- TGS --),
+///         padata          [2] SEQUENCE OF PA-DATA OPTIONAL
+///                                 -- NOTE: not empty --,
+///         crealm          [3] Realm,
+///         cname           [4] PrincipalName,
+///         ticket          [5] Ticket,
+///         enc-part        [6] EncryptedData
+///                                 -- EncASRepPart or EncTGSRepPart,
+///                                 -- as appropriate
+/// }
+/// </pre>
+pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
+    parse_der_struct!(
+        i,
+        pvno:    map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
+        msgtype: map_res!(parse_der_tagged!(EXPLICIT 1,parse_der_integer),|x: DerObject| x.as_u32()) >>
+        padata:  opt!(parse_der_tagged!(EXPLICIT 2,many1!(parse_der))) >>
+        crealm:  parse_der_tagged!(EXPLICIT 3,parse_krb5_realm) >>
+        cname:   parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
+        ticket:  parse_der_tagged!(EXPLICIT 5,parse_krb5_ticket) >>
+        encp:    parse_der_tagged!(EXPLICIT 6,parse_encrypted) >>
+               eof!() >>
+        ( KdcRep{
+            pvno: pvno,
+            msg_type: msgtype,
+            padata: padata.unwrap_or(Vec::new()),
+            crealm: crealm,
+            cname: cname,
+            ticket: ticket,
+            enc_part: encp,
+        })
+    ).map(|t| t.1)
+}
+
+/// Parse of a Kerberos AS Reply
+///
+/// <pre>
+/// AS-REP          ::= [APPLICATION 11] KDC-REP
+/// </pre>
+pub fn parse_as_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 11,
+        rep: parse_kdc_rep >> (rep)
+    ).map(|t| t.1)
+}
+
+/// Parse of a Kerberos TGS Reply
+///
+/// <pre>
+/// TGS-REP          ::= [APPLICATION 13] KDC-REP
+/// </pre>
+pub fn parse_tgs_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 13,
+        rep: parse_kdc_rep >> (rep)
+    ).map(|t| t.1)
+}
