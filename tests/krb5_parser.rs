@@ -105,3 +105,22 @@ fn test_parse_as_req() {
     }
 }
 
+static AS_REP: &'static [u8] = include_bytes!("../assets/as-rep.bin");
+#[test]
+fn test_parse_as_rep() {
+    let bytes = AS_REP;
+
+    let res = parse_as_rep(bytes);
+    // println!("parse_as_rep: {:?}", res);
+    match res {
+        IResult::Done(rem,req) => {
+            assert!(rem.is_empty());
+            assert_eq!(req.pvno, 5);
+            assert_eq!(req.msg_type, 11);
+            assert_eq!(req.crealm, Realm(String::from("DENYDC.COM")));
+            assert_eq!(req.cname,
+                       PrincipalName{ name_type:1, name_string:vec![String::from("des")] });
+        },
+        _ => assert!(false)
+    }
+}
