@@ -1,9 +1,11 @@
 //! Kerberos 5 structures
 //!
 //! - [RFC1510](https://tools.ietf.org/html/rfc1510) The Kerberos Network Authentication Service (V5)
+//! - [RFC3961](https://tools.ietf.org/html/rfc3961) Encryption and Checksum Specifications for Kerberos 5
 //! - [RFC4120](https://tools.ietf.org/html/rfc4120) The Kerberos Network Authentication Service (V5)
 
 use der_parser::DerObject;
+use std::fmt;
 
 /// Kerberos Realm
 ///
@@ -113,4 +115,55 @@ pub struct KrbError<'a> {
     pub sname: PrincipalName,
     pub etext: Option<String>,
     pub edata: Option<DerObject<'a>>,
+}
+
+/// Encryption type
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct EncryptionType(pub u32);
+
+impl EncryptionType {
+    pub const DES_CBC_CRC                  : EncryptionType = EncryptionType(1);
+    pub const DES_CBC_MD4                  : EncryptionType = EncryptionType(2);
+    pub const DES_CBC_MD5                  : EncryptionType = EncryptionType(3);
+    pub const DES3_CBC_MD5                 : EncryptionType = EncryptionType(5);
+    pub const DES3_CBC_SHA1                : EncryptionType = EncryptionType(7);
+    pub const DSAWITHSHA1_CMSOID           : EncryptionType = EncryptionType(9);
+    pub const MD5WITHRSAENCRYPTION_CMSOID  : EncryptionType = EncryptionType(10);
+    pub const SHA1WITHRSAENCRYPTION_CMSOID : EncryptionType = EncryptionType(11);
+    pub const RC2CBC_ENVOID                : EncryptionType = EncryptionType(12);
+    pub const RSAENCRYPTION_ENVOID         : EncryptionType = EncryptionType(13);
+    pub const RSAES_OAEP_ENV_OID           : EncryptionType = EncryptionType(14);
+    pub const DES_EDE3_CBC_ENV_OID         : EncryptionType = EncryptionType(15);
+    pub const DES3_CBC_SHA1_KD             : EncryptionType = EncryptionType(16);
+    pub const AES128_CTS_HMAC_SHA1_96      : EncryptionType = EncryptionType(17);
+    pub const AES256_CTS_HMAC_SHA1_96      : EncryptionType = EncryptionType(18);
+    pub const RC4_HMAC                     : EncryptionType = EncryptionType(23);
+    pub const RC4_HMAC_EXP                 : EncryptionType = EncryptionType(24);
+    pub const SUBKEY_KEYMATERIAL           : EncryptionType = EncryptionType(65);
+}
+
+impl fmt::Debug for EncryptionType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            1  => f.write_str("des-cbc-crc"),
+            2  => f.write_str("des-cbc-md4"),
+            3  => f.write_str("des-cbc-md5"),
+            5  => f.write_str("des3-cbc-md5"),
+            7  => f.write_str("des3-cbc-sha1"),
+            9  => f.write_str("dsaWithSHA1-CmsOID"),
+            10 => f.write_str("md5WithRSAEncryption-CmsOID"),
+            11 => f.write_str("sha1WithRSAEncryption-CmsOID"),
+            12 => f.write_str("rc2CBC-EnvOID"),
+            13 => f.write_str("rsaEncryption-EnvOID"),
+            14 => f.write_str("rsaES-OAEP-ENV-OID"),
+            15 => f.write_str("des-ede3-cbc-Env-OID"),
+            16 => f.write_str("des3-cbc-sha1-kd"),
+            17 => f.write_str("aes128-cts-hmac-sha1-96"),
+            18 => f.write_str("aes256-cts-hmac-sha1-96"),
+            23 => f.write_str("rc4-hmac"),
+            24 => f.write_str("rc4-hmac-exp"),
+            65 => f.write_str("subkey-keymaterial"),
+            n  => f.debug_tuple("EncryptionType").field(&n).finish(),
+        }
+    }
 }
