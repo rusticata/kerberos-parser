@@ -124,3 +124,24 @@ fn test_parse_as_rep() {
         _ => assert!(false)
     }
 }
+
+static KRB_ERROR: &'static [u8] = include_bytes!("../assets/krb-error.bin");
+#[test]
+fn test_parse_krb_error() {
+    let bytes = KRB_ERROR;
+
+    let res = parse_krb_error(bytes);
+    // println!("parse_krb_error: {:?}", res);
+    match res {
+        IResult::Done(rem,err) => {
+            assert!(rem.is_empty());
+            assert_eq!(err.pvno, 5);
+            assert_eq!(err.msg_type, 30);
+            assert_eq!(err.error_code, 14);
+            assert_eq!(err.realm, Realm(String::from("DENYDC")));
+            assert_eq!(err.sname,
+                       PrincipalName{ name_type:2, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] });
+        },
+        _ => assert!(false)
+    }
+}

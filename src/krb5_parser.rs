@@ -1,7 +1,7 @@
 //! Kerberos 5 parsing functions
 
 use nom::{IResult,ErrorKind};
-use der_parser::{parse_der,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerTag};
+use der_parser::{parse_der,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerTag,DerError};
 use std::str;
 
 use krb5::*;
@@ -9,6 +9,13 @@ use krb5::*;
 
 fn parse_der_uint32(i:&[u8]) -> IResult<&[u8],u32> {
     map_res!(i, parse_der_integer,|x: DerObject| x.as_u32())
+}
+
+//  Microseconds    ::= INTEGER (0..999999)
+//                      -- microseconds
+fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
+    map_res!(i, parse_der_integer,|x: DerObject|
+             x.as_u32().and_then(|x| if x <= 999999 {Ok(x)} else {Err(DerError::IntegerTooLarge)}))
 }
 
 /// Parse a Kerberos string object
@@ -382,4 +389,63 @@ pub fn parse_tgs_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
         APPLICATION 13,
         rep: parse_kdc_rep >> (rep)
     ).map(|t| t.1)
+}
+
+/// Parse a Kerberos Error
+///
+/// <pre>
+/// KRB-ERROR       ::= [APPLICATION 30] SEQUENCE {
+///         pvno            [0] INTEGER (5),
+///         msg-type        [1] INTEGER (30),
+///         ctime           [2] KerberosTime OPTIONAL,
+///         cusec           [3] Microseconds OPTIONAL,
+///         stime           [4] KerberosTime,
+///         susec           [5] Microseconds,
+///         error-code      [6] Int32,
+///         crealm          [7] Realm OPTIONAL,
+///         cname           [8] PrincipalName OPTIONAL,
+///         realm           [9] Realm -- service realm --,
+///         sname           [10] PrincipalName -- service name --,
+///         e-text          [11] KerberosString OPTIONAL,
+///         e-data          [12] OCTET STRING OPTIONAL
+/// }
+/// </pre>
+pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 30,
+        st: parse_der_struct!(
+            pvno:    map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
+                     error_if!(pvno != 5, ErrorKind::Tag) >>
+            msgtype: map_res!(parse_der_tagged!(EXPLICIT 1,parse_der_integer),|x: DerObject| x.as_u32()) >>
+                     error_if!(msgtype != 30, ErrorKind::Tag) >>
+            ctime:   opt!(parse_der_tagged!(EXPLICIT 2,parse_kerberos_time)) >>
+            cusec:   opt!(parse_der_tagged!(EXPLICIT 3,parse_der_microseconds)) >>
+            stime:   parse_der_tagged!(EXPLICIT 4,parse_kerberos_time) >>
+            susec:   parse_der_tagged!(EXPLICIT 5,parse_der_microseconds) >>
+            errorc:  map_res!(parse_der_tagged!(EXPLICIT 6,parse_der_integer),|x: DerObject| x.as_u32()) >> // XXX int32
+            crealm:  opt!(parse_der_tagged!(EXPLICIT 7,parse_krb5_realm)) >>
+            cname:   opt!(parse_der_tagged!(EXPLICIT 8,parse_krb5_principalname)) >>
+            realm:   parse_der_tagged!(EXPLICIT 9,parse_krb5_realm) >>
+            sname:   parse_der_tagged!(EXPLICIT 10,parse_krb5_principalname) >>
+            etext:   opt!(complete!(parse_der_tagged!(EXPLICIT 11,parse_kerberos_string))) >>
+            edata:   opt!(complete!(parse_der_tagged!(EXPLICIT 12,parse_der_octetstring))) >>
+            (KrbError{
+                pvno: pvno,
+                msg_type: msgtype,
+                ctime: ctime,
+                cusec: cusec,
+                stime: stime,
+                susec: susec,
+                error_code: errorc as i32, // XXX i32
+                crealm: crealm,
+                cname: cname,
+                realm: realm,
+                sname: sname,
+                etext: etext,
+                edata: edata,
+            })
+        )
+        >> (st)
+    ).map(|t| (t.1).1)
 }

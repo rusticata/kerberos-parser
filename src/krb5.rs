@@ -96,3 +96,21 @@ pub struct KdcRep<'a> {
     pub ticket: Ticket<'a>,
     pub enc_part: EncryptedData<'a>,
 }
+
+/// Kerberos Error message
+#[derive(Debug, PartialEq)]
+pub struct KrbError<'a> {
+    pub pvno: u32,
+    pub msg_type: u32,
+    pub ctime: Option<DerObject<'a>>,
+    pub cusec: Option<u32>,
+    pub stime: DerObject<'a>,
+    pub susec: u32,
+    pub error_code: i32,
+    pub crealm: Option<Realm>,
+    pub cname: Option<PrincipalName>,
+    pub realm: Realm,
+    pub sname: PrincipalName,
+    pub etext: Option<String>,
+    pub edata: Option<DerObject<'a>>,
+}
