@@ -293,7 +293,7 @@ pub fn parse_kdc_req_body<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReqBody<'a>> {
     ).map(|t| t.1)
 }
 
-/// Parse of a Kerberos AS Request
+/// Parse a Kerberos AS Request
 ///
 /// <pre>
 /// AS-REQ          ::= [APPLICATION 10] KDC-REQ
@@ -306,7 +306,7 @@ pub fn parse_as_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
     ).map(|t| t.1)
 }
 
-/// Parse of a Kerberos TGS Request
+/// Parse a Kerberos TGS Request
 ///
 /// <pre>
 /// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
@@ -358,7 +358,7 @@ pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
     ).map(|t| t.1)
 }
 
-/// Parse of a Kerberos AS Reply
+/// Parse a Kerberos AS Reply
 ///
 /// <pre>
 /// AS-REP          ::= [APPLICATION 11] KDC-REP
@@ -371,7 +371,7 @@ pub fn parse_as_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
     ).map(|t| t.1)
 }
 
-/// Parse of a Kerberos TGS Reply
+/// Parse a Kerberos TGS Reply
 ///
 /// <pre>
 /// TGS-REP          ::= [APPLICATION 13] KDC-REP
