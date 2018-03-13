@@ -24,7 +24,7 @@ pub struct Realm(pub String);
 /// </pre>
 #[derive(Debug, PartialEq)]
 pub struct PrincipalName {
-    pub name_type: u32,
+    pub name_type: i32,
     pub name_string: Vec<String>,
 }
 
@@ -47,7 +47,7 @@ pub struct Ticket<'a> {
 #[derive(Debug, PartialEq)]
 pub struct EncryptedData<'a> {
     /// EncryptionType
-    pub etype: u32,
+    pub etype: EncryptionType,
     /// Version number of the key under which data is encrypted
     pub kvno: Option<u32>,
     /// Ciphertext
@@ -74,7 +74,7 @@ pub struct KdcReqBody<'a> {
     pub till: DerObject<'a>,
     pub rtime: Option<DerObject<'a>>,
     pub nonce: u32,
-    pub etype: Vec<u32>,
+    pub etype: Vec<EncryptionType>,
     pub addresses: Vec<HostAddress<'a>>,
     pub enc_authorization_data: Option<EncryptedData<'a>>,
     pub additional_tickets: Vec<Ticket<'a>>,
@@ -83,7 +83,7 @@ pub struct KdcReqBody<'a> {
 /// Kerberos HostAddress
 #[derive(Debug, PartialEq)]
 pub struct HostAddress<'a> {
-    pub addr_type: u32,
+    pub addr_type: i32,
     pub address: &'a[u8],
 }
 
@@ -119,7 +119,7 @@ pub struct KrbError<'a> {
 
 /// Encryption type
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EncryptionType(pub u32);
+pub struct EncryptionType(pub i32);
 
 impl EncryptionType {
     pub const DES_CBC_CRC                  : EncryptionType = EncryptionType(1);

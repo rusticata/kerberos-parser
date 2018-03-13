@@ -1,13 +1,41 @@
 //! Kerberos 5 parsing functions
 
 use nom::{IResult,ErrorKind};
-use der_parser::{parse_der,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerTag,DerError};
+use der_parser::{parse_der,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
 use std::str;
 
 use krb5::*;
 
+/// Parse a signed 32 bits integer
+///
+/// <pre>
+/// Int32           ::= INTEGER (-2147483648..2147483647)
+///                     -- signed values representable in 32 bits
+/// </pre>
+pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8],i32> {
+    map_res!(i, parse_der_integer,|x: DerObject| {
+        match x.content {
+            DerObjectContent::Integer(i) => {
+                match i.len() {
+                    1 => Ok(  i[0] as i8 as i32),
+                    2 => Ok( (i[0] as i8 as i32) << 8  | (i[1] as i32) ),
+                    3 => Ok( (i[0] as i8 as i32) << 16 | (i[1] as i32) << 8 | (i[2] as i32) ),
+                    4 => Ok( (i[0] as i8 as i32) << 24 | (i[1] as i32) << 16 | (i[2] as i32) << 8 | (i[3] as i32) ),
+                    _ => Err(DerError::IntegerTooLarge),
+                }
+            }
+            _ => Err(DerError::DerTypeError)
+        }
+    })
+}
 
-fn parse_der_uint32(i:&[u8]) -> IResult<&[u8],u32> {
+/// Parse an unsigned 32 bits integer
+///
+/// <pre>
+/// UInt32          ::= INTEGER (0..4294967295)
+///                     -- unsigned 32 bit values
+/// </pre>
+pub fn parse_der_uint32(i:&[u8]) -> IResult<&[u8],u32> {
     map_res!(i, parse_der_integer,|x: DerObject| x.as_u32())
 }
 
@@ -82,7 +110,7 @@ pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8],PrincipalName> {
     map_res!(
         i,
         parse_der_struct!(
-            t: map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
+            t: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
             s: parse_der_tagged!(EXPLICIT 1, parse_kerberos_string_sequence) >>
             ( PrincipalName{
                 name_type: t,
@@ -117,7 +145,7 @@ pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8],HostAddress<'a>
     map_res!(
         i,
         parse_der_struct!(
-            t: map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >> // XXX i32
+            t: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
             a: map_res!(parse_der_tagged!(EXPLICIT 1, parse_der_octetstring),|x: DerObject<'a>| x.as_slice()) >>
             ( HostAddress{
                 addr_type: t,
@@ -170,7 +198,7 @@ pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
         i,
         APPLICATION 1,
         st: parse_der_struct!(
-            no: map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
+            no: parse_der_tagged!(EXPLICIT 0, parse_der_uint32) >>
                 error_if!(no != 5, ErrorKind::Tag) >>
             r:  parse_der_tagged!(EXPLICIT 1, parse_krb5_realm) >>
             s:  parse_der_tagged!(EXPLICIT 2, parse_krb5_principalname) >>
@@ -197,12 +225,12 @@ pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
 pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
     parse_der_struct!(
         i,
-        e: map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
-        k: opt!(parse_der_tagged!(EXPLICIT 1, parse_der_uint32)) >> // XXX use parse_int32
+        e: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
+        k: opt!(parse_der_tagged!(EXPLICIT 1, parse_der_uint32)) >>
         c: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring), |x: DerObject<'a>| x.as_slice()) >>
            eof!() >>
         ( EncryptedData{
-            etype: e,
+            etype: EncryptionType(e),
             kvno: k,
             cipher: c
         })
@@ -225,10 +253,10 @@ pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
 pub fn parse_kdc_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
     parse_der_struct!(
         i,
-        n: map_res!(parse_der_tagged!(EXPLICIT 1,parse_der_integer),|x: DerObject| x.as_u32()) >>
-        t: map_res!(parse_der_tagged!(EXPLICIT 2,parse_der_integer),|x: DerObject| x.as_u32()) >>
-        d: opt!(parse_der_tagged!(EXPLICIT 3,many1!(parse_der))) >>
-        b: parse_der_tagged!(EXPLICIT 4,parse_kdc_req_body) >>
+        n: parse_der_tagged!(EXPLICIT 1, parse_der_uint32) >>
+        t: parse_der_tagged!(EXPLICIT 2, parse_der_uint32) >>
+        d: opt!(parse_der_tagged!(EXPLICIT 3, many1!(parse_der))) >>
+        b: parse_der_tagged!(EXPLICIT 4, parse_kdc_req_body) >>
            eof!() >>
         ( KdcReq{
             pvno: n,
@@ -275,7 +303,7 @@ pub fn parse_kdc_req_body<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReqBody<'a>> {
         rtime: opt!(complete!(parse_der_tagged!(EXPLICIT 6,parse_kerberos_time))) >>
         nonce: parse_der_tagged!(EXPLICIT 7, parse_der_uint32) >>
         etype: parse_der_tagged!(EXPLICIT 8,
-                                 parse_der_struct!(v: many1!(parse_der_uint32) >> (v))
+                                 parse_der_struct!(v: many1!(parse_der_int32) >> (v.iter().map(|&x| EncryptionType(x)).collect()))
                                  ) >>
         addr:  opt!(complete!(parse_der_tagged!(9,parse_krb5_hostaddresses))) >>
         ead:   opt!(complete!(parse_der_tagged!(10,parse_encrypted))) >>
@@ -345,8 +373,8 @@ pub fn parse_tgs_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
 pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
     parse_der_struct!(
         i,
-        pvno:    map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
-        msgtype: map_res!(parse_der_tagged!(EXPLICIT 1,parse_der_integer),|x: DerObject| x.as_u32()) >>
+        pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+        msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
         padata:  opt!(parse_der_tagged!(EXPLICIT 2,many1!(parse_der))) >>
         crealm:  parse_der_tagged!(EXPLICIT 3,parse_krb5_realm) >>
         cname:   parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
@@ -415,15 +443,15 @@ pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
         i,
         APPLICATION 30,
         st: parse_der_struct!(
-            pvno:    map_res!(parse_der_tagged!(EXPLICIT 0,parse_der_integer),|x: DerObject| x.as_u32()) >>
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
                      error_if!(pvno != 5, ErrorKind::Tag) >>
-            msgtype: map_res!(parse_der_tagged!(EXPLICIT 1,parse_der_integer),|x: DerObject| x.as_u32()) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
                      error_if!(msgtype != 30, ErrorKind::Tag) >>
             ctime:   opt!(parse_der_tagged!(EXPLICIT 2,parse_kerberos_time)) >>
             cusec:   opt!(parse_der_tagged!(EXPLICIT 3,parse_der_microseconds)) >>
             stime:   parse_der_tagged!(EXPLICIT 4,parse_kerberos_time) >>
             susec:   parse_der_tagged!(EXPLICIT 5,parse_der_microseconds) >>
-            errorc:  map_res!(parse_der_tagged!(EXPLICIT 6,parse_der_integer),|x: DerObject| x.as_u32()) >> // XXX int32
+            errorc:  parse_der_tagged!(EXPLICIT 6,parse_der_int32) >>
             crealm:  opt!(parse_der_tagged!(EXPLICIT 7,parse_krb5_realm)) >>
             cname:   opt!(parse_der_tagged!(EXPLICIT 8,parse_krb5_principalname)) >>
             realm:   parse_der_tagged!(EXPLICIT 9,parse_krb5_realm) >>

@@ -76,7 +76,7 @@ fn test_parse_ticket() {
             assert_eq!(tkt.sname, PrincipalName{ name_type:2, name_string:vec![String::from("cifs"),String::from("Admin-PC.contoso.local")] });
             let enc = parse_encrypted(tkt.enc_part).unwrap().1;
             // println!("enc: {:?}", enc);
-            assert_eq!(enc.etype,18);
+            assert_eq!(enc.etype,EncryptionType::AES256_CTS_HMAC_SHA1_96);
             assert_eq!(enc.kvno,Some(1));
         },
         _ => assert!(false)
@@ -144,4 +144,17 @@ fn test_parse_krb_error() {
         },
         _ => assert!(false)
     }
+}
+
+#[test]
+fn test_parse_int32() {
+    let empty = &b""[..];
+    assert_eq!(parse_der_int32(&[0x02, 0x01, 0xff]),IResult::Done(empty,-1));
+    assert_eq!(parse_der_int32(&[0x02, 0x01, 0x01]),IResult::Done(empty,1));
+    assert_eq!(parse_der_int32(&[0x02, 0x02, 0xff, 0xff]),IResult::Done(empty,-1));
+    assert_eq!(parse_der_int32(&[0x02, 0x02, 0x01, 0x23]),IResult::Done(empty,0x123));
+    assert_eq!(parse_der_int32(&[0x02, 0x03, 0xff, 0xff, 0xff]),IResult::Done(empty,-1));
+    assert_eq!(parse_der_int32(&[0x02, 0x03, 0x01, 0x23, 0x45]),IResult::Done(empty,0x12345));
+    assert_eq!(parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),IResult::Done(empty,-1));
+    assert_eq!(parse_der_int32(&[0x02, 0x04, 0x01, 0x23, 0x45, 0x67]),IResult::Done(empty,0x1234567));
 }
