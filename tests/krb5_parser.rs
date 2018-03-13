@@ -34,7 +34,7 @@ fn test_parse_principalname() {
     ];
     let empty = &b""[..];
     let expected = IResult::Done(empty,PrincipalName{
-        name_type: 0,
+        name_type: NameType(0),
         name_string: vec![String::from("Jones")]
     });
 
@@ -53,7 +53,7 @@ fn test_parse_principalname2() {
     ];
     let empty = &b""[..];
     let expected = IResult::Done(empty,PrincipalName{
-        name_type: 2,
+        name_type: NameType::KRB_NT_SRV_INST,
         name_string: vec![String::from("cifs"),String::from("Admin-PC.contoso.local")]
     });
 
@@ -73,7 +73,7 @@ fn test_parse_ticket() {
             assert!(rem.is_empty());
             assert_eq!(tkt.tkt_vno, 5);
             assert_eq!(tkt.realm, Realm(String::from("CONTOSO.LOCAL")));
-            assert_eq!(tkt.sname, PrincipalName{ name_type:2, name_string:vec![String::from("cifs"),String::from("Admin-PC.contoso.local")] });
+            assert_eq!(tkt.sname, PrincipalName{ name_type:NameType::KRB_NT_SRV_INST, name_string:vec![String::from("cifs"),String::from("Admin-PC.contoso.local")] });
             let enc = parse_encrypted(tkt.enc_part).unwrap().1;
             // println!("enc: {:?}", enc);
             assert_eq!(enc.etype,EncryptionType::AES256_CTS_HMAC_SHA1_96);
@@ -94,12 +94,12 @@ fn test_parse_as_req() {
         IResult::Done(rem,req) => {
             assert!(rem.is_empty());
             assert_eq!(req.pvno, 5);
-            assert_eq!(req.msg_type, 10);
+            assert_eq!(req.msg_type, MessageType::KRB_AS_REQ);
             assert_eq!(req.req_body.realm, Realm(String::from("DENYDC")));
             assert_eq!(req.req_body.cname,
-                       Some(PrincipalName{ name_type:1, name_string:vec![String::from("des")] }));
+                       Some(PrincipalName{ name_type:NameType::KRB_NT_PRINCIPAL, name_string:vec![String::from("des")] }));
             assert_eq!(req.req_body.sname,
-                       Some(PrincipalName{ name_type:2, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] }));
+                       Some(PrincipalName{ name_type:NameType::KRB_NT_SRV_INST, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] }));
         },
         _ => assert!(false)
     }
@@ -116,10 +116,10 @@ fn test_parse_as_rep() {
         IResult::Done(rem,req) => {
             assert!(rem.is_empty());
             assert_eq!(req.pvno, 5);
-            assert_eq!(req.msg_type, 11);
+            assert_eq!(req.msg_type, MessageType::KRB_AS_REP);
             assert_eq!(req.crealm, Realm(String::from("DENYDC.COM")));
             assert_eq!(req.cname,
-                       PrincipalName{ name_type:1, name_string:vec![String::from("des")] });
+                       PrincipalName{ name_type:NameType::KRB_NT_PRINCIPAL, name_string:vec![String::from("des")] });
         },
         _ => assert!(false)
     }
@@ -136,11 +136,11 @@ fn test_parse_krb_error() {
         IResult::Done(rem,err) => {
             assert!(rem.is_empty());
             assert_eq!(err.pvno, 5);
-            assert_eq!(err.msg_type, 30);
+            assert_eq!(err.msg_type, MessageType::KRB_ERROR);
             assert_eq!(err.error_code, 14);
             assert_eq!(err.realm, Realm(String::from("DENYDC")));
             assert_eq!(err.sname,
-                       PrincipalName{ name_type:2, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] });
+                       PrincipalName{ name_type:NameType::KRB_NT_SRV_INST, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] });
         },
         _ => assert!(false)
     }

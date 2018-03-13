@@ -113,7 +113,7 @@ pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8],PrincipalName> {
             t: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
             s: parse_der_tagged!(EXPLICIT 1, parse_kerberos_string_sequence) >>
             ( PrincipalName{
-                name_type: t,
+                name_type: NameType(t),
                 name_string: s,
             })
         ),
@@ -148,7 +148,7 @@ pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8],HostAddress<'a>
             t: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
             a: map_res!(parse_der_tagged!(EXPLICIT 1, parse_der_octetstring),|x: DerObject<'a>| x.as_slice()) >>
             ( HostAddress{
-                addr_type: t,
+                addr_type: AddressType(t),
                 address: a,
             })
         ),
@@ -260,7 +260,7 @@ pub fn parse_kdc_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
            eof!() >>
         ( KdcReq{
             pvno: n,
-            msg_type: t,
+            msg_type: MessageType(t),
             padata: d.unwrap_or(Vec::new()),
             req_body: b
         })
@@ -383,7 +383,7 @@ pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
                eof!() >>
         ( KdcRep{
             pvno: pvno,
-            msg_type: msgtype,
+            msg_type: MessageType(msgtype),
             padata: padata.unwrap_or(Vec::new()),
             crealm: crealm,
             cname: cname,
@@ -460,7 +460,7 @@ pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
             edata:   opt!(complete!(parse_der_tagged!(EXPLICIT 12,parse_der_octetstring))) >>
             (KrbError{
                 pvno: pvno,
-                msg_type: msgtype,
+                msg_type: MessageType(msgtype),
                 ctime: ctime,
                 cusec: cusec,
                 stime: stime,
