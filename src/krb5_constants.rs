@@ -202,3 +202,35 @@ impl fmt::Debug for NameType {
     }
 }
 
+/// PA-Data type
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct PAType(pub i32);
+
+impl PAType {
+    /// DER encoding of AP-REQ
+    pub const PA_TGS_REQ          : PAType = PAType(1);
+    /// DER encoding of PA-ENC-TIMESTAMP
+    pub const PA_ENC_TS           : PAType = PAType(2);
+    /// salt (not ASN.1 encoded)
+    pub const PA_PW_SALT          : PAType = PAType(3);
+    /// DER encoding of ETYPE-INFO
+    pub const PA_ETYPE_INFO       : PAType = PAType(11);
+    /// DER encoding of ETYPE-INFO2
+    pub const PA_ETYPE_INFO2      : PAType = PAType(19);
+    /// Windows PAC request
+    pub const PA_PAC_REQUEST      : PAType = PAType(128);
+}
+
+impl fmt::Debug for PAType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            1   => f.write_str("pa-tgs-req"),
+            2   => f.write_str("pa-enc-timestamp"),
+            3   => f.write_str("pa-pw-salt"),
+            11  => f.write_str("pa-etype-info"),
+            19  => f.write_str("pa-etype-info2"),
+            128 => f.write_str("pa-pac-request"),
+            n   => f.debug_tuple("PAType").field(&n).finish(),
+        }
+    }
+}

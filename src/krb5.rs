@@ -60,7 +60,7 @@ pub struct EncryptedData<'a> {
 pub struct KdcReq<'a> {
     pub pvno: u32,
     pub msg_type: MessageType,
-    pub padata: Vec<DerObject<'a>>,
+    pub padata: Vec<PAData<'a>>,
     pub req_body: KdcReqBody<'a>,
 }
 
@@ -93,7 +93,7 @@ pub struct HostAddress<'a> {
 pub struct KdcRep<'a> {
     pub pvno: u32,
     pub msg_type: MessageType,
-    pub padata: Vec<DerObject<'a>>,
+    pub padata: Vec<PAData<'a>>,
     pub crealm: Realm,
     pub cname: PrincipalName,
     pub ticket: Ticket<'a>,
@@ -116,4 +116,11 @@ pub struct KrbError<'a> {
     pub sname: PrincipalName,
     pub etext: Option<String>,
     pub edata: Option<DerObject<'a>>,
+}
+
+/// Kerberos PA-Data
+#[derive(Debug, PartialEq)]
+pub struct PAData<'a> {
+    pub padata_type:  PAType,
+    pub padata_value: &'a[u8],
 }

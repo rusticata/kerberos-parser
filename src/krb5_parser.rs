@@ -255,7 +255,7 @@ pub fn parse_kdc_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
         i,
         n: parse_der_tagged!(EXPLICIT 1, parse_der_uint32) >>
         t: parse_der_tagged!(EXPLICIT 2, parse_der_uint32) >>
-        d: opt!(parse_der_tagged!(EXPLICIT 3, many1!(parse_der))) >>
+        d: opt!(parse_der_tagged!(EXPLICIT 3, parse_krb5_padata_sequence)) >>
         b: parse_der_tagged!(EXPLICIT 4, parse_kdc_req_body) >>
            eof!() >>
         ( KdcReq{
@@ -375,7 +375,7 @@ pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
         i,
         pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
         msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
-        padata:  opt!(parse_der_tagged!(EXPLICIT 2,many1!(parse_der))) >>
+        padata:  opt!(parse_der_tagged!(EXPLICIT 2,parse_krb5_padata_sequence)) >>
         crealm:  parse_der_tagged!(EXPLICIT 3,parse_krb5_realm) >>
         cname:   parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
         ticket:  parse_der_tagged!(EXPLICIT 5,parse_krb5_ticket) >>
@@ -476,4 +476,45 @@ pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
         )
         >> (st)
     ).map(|t| (t.1).1)
+}
+
+/// Parse Kerberos PA-Data
+///
+/// <pre>
+/// PA-DATA         ::= SEQUENCE {
+///         -- NOTE: first tag is [1], not [0]
+///         padata-type     [1] Int32,
+///         padata-value    [2] OCTET STRING -- might be encoded AP-REQ
+/// }
+/// </pre>
+pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8],PAData<'a>> {
+    map_res!(
+        i,
+        parse_der_struct!(
+            t: dbg_dmp!(parse_der_tagged!(EXPLICIT 1, parse_der_int32)) >>
+            s: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring),|x: DerObject<'a>| x.as_slice()) >>
+            ( PAData{
+                padata_type:  PAType(t),
+                padata_value: s,
+            })
+        ),
+        |(hdr,t) : (DerObjectHeader,_)| {
+            if hdr.tag != DerTag::Sequence as u8 { return Err("not a sequence!"); }
+            Ok(t)
+        }
+    )
+}
+
+fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8],Vec<PAData>> {
+    map_res!(
+        i,
+        parse_der_struct!(
+            v: many0!(parse_krb5_padata) >>
+            ( v )
+        ),
+        |(hdr,t) : (DerObjectHeader,_)| {
+            if hdr.tag != DerTag::Sequence as u8 { return Err("not a sequence!"); }
+            Ok(t)
+        }
+    )
 }
