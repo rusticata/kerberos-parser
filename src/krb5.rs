@@ -140,30 +140,54 @@ impl EncryptionType {
     pub const RC4_HMAC                     : EncryptionType = EncryptionType(23);
     pub const RC4_HMAC_EXP                 : EncryptionType = EncryptionType(24);
     pub const SUBKEY_KEYMATERIAL           : EncryptionType = EncryptionType(65);
+    // negative values
+    pub const RC4_MD4                      : EncryptionType = EncryptionType(-128);
+    pub const RC4_PLAIN2                   : EncryptionType = EncryptionType(-129);
+    pub const RC4_LM                       : EncryptionType = EncryptionType(-130);
+    pub const RC4_SHA                      : EncryptionType = EncryptionType(-131);
+    pub const DES_PLAIN                    : EncryptionType = EncryptionType(-132);
+    pub const RC4_HMAC_OLD                 : EncryptionType = EncryptionType(-133);
+    pub const RC4_PLAIN_OLD                : EncryptionType = EncryptionType(-134);
+    pub const RC4_HMAC_OLD_EXP             : EncryptionType = EncryptionType(-135);
+    pub const RC4_PLAIN_OLD_EXP            : EncryptionType = EncryptionType(-136);
+    pub const RC4_PLAIN                    : EncryptionType = EncryptionType(-140);
+    pub const RC4_PLAIN_EXP                : EncryptionType = EncryptionType(-141);
 }
 
 impl fmt::Debug for EncryptionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
-            1  => f.write_str("des-cbc-crc"),
-            2  => f.write_str("des-cbc-md4"),
-            3  => f.write_str("des-cbc-md5"),
-            5  => f.write_str("des3-cbc-md5"),
-            7  => f.write_str("des3-cbc-sha1"),
-            9  => f.write_str("dsaWithSHA1-CmsOID"),
-            10 => f.write_str("md5WithRSAEncryption-CmsOID"),
-            11 => f.write_str("sha1WithRSAEncryption-CmsOID"),
-            12 => f.write_str("rc2CBC-EnvOID"),
-            13 => f.write_str("rsaEncryption-EnvOID"),
-            14 => f.write_str("rsaES-OAEP-ENV-OID"),
-            15 => f.write_str("des-ede3-cbc-Env-OID"),
-            16 => f.write_str("des3-cbc-sha1-kd"),
-            17 => f.write_str("aes128-cts-hmac-sha1-96"),
-            18 => f.write_str("aes256-cts-hmac-sha1-96"),
-            23 => f.write_str("rc4-hmac"),
-            24 => f.write_str("rc4-hmac-exp"),
-            65 => f.write_str("subkey-keymaterial"),
-            n  => f.debug_tuple("EncryptionType").field(&n).finish(),
+            1    => f.write_str("des-cbc-crc"),
+            2    => f.write_str("des-cbc-md4"),
+            3    => f.write_str("des-cbc-md5"),
+            5    => f.write_str("des3-cbc-md5"),
+            7    => f.write_str("des3-cbc-sha1"),
+            9    => f.write_str("dsaWithSHA1-CmsOID"),
+            10   => f.write_str("md5WithRSAEncryption-CmsOID"),
+            11   => f.write_str("sha1WithRSAEncryption-CmsOID"),
+            12   => f.write_str("rc2CBC-EnvOID"),
+            13   => f.write_str("rsaEncryption-EnvOID"),
+            14   => f.write_str("rsaES-OAEP-ENV-OID"),
+            15   => f.write_str("des-ede3-cbc-Env-OID"),
+            16   => f.write_str("des3-cbc-sha1-kd"),
+            17   => f.write_str("aes128-cts-hmac-sha1-96"),
+            18   => f.write_str("aes256-cts-hmac-sha1-96"),
+            23   => f.write_str("rc4-hmac"),
+            24   => f.write_str("rc4-hmac-exp"),
+            65   => f.write_str("subkey-keymaterial"),
+            // negative values
+            -128 => f.write_str("rc4-md4"),
+            -129 => f.write_str("rc4-plain2"),
+            -130 => f.write_str("rc4-lm"),
+            -131 => f.write_str("rc4-sha"),
+            -132 => f.write_str("des-plain"),
+            -133 => f.write_str("rc4-hmac-OLD"),
+            -134 => f.write_str("rc4-plain-OLD"),
+            -135 => f.write_str("rc4-hmac-OLD-exp"),
+            -136 => f.write_str("rc4-plain-OLD-exp"),
+            -140 => f.write_str("rc4-plain"),
+            -141 => f.write_str("rc4-plain-exp"),
+            n    => f.debug_tuple("EncryptionType").field(&n).finish(),
         }
     }
 }
