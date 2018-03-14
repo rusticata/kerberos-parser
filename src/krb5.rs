@@ -124,3 +124,21 @@ pub struct PAData<'a> {
     pub padata_type:  PAType,
     pub padata_value: &'a[u8],
 }
+
+/// Kerberos AP Request
+#[derive(Debug, PartialEq)]
+pub struct ApReq<'a> {
+    pub pvno          : u32,
+    pub msg_type      : MessageType,
+    pub ap_options    : DerObject<'a>, // KerberosFlags
+    pub ticket        : Ticket<'a>,
+    pub authenticator : EncryptedData<'a>,
+}
+
+/// Kerberos AP Reply
+#[derive(Debug, PartialEq)]
+pub struct ApRep<'a> {
+    pub pvno     : u32,
+    pub msg_type : MessageType,
+    pub enc_part : EncryptedData<'a>,
+}

@@ -518,3 +518,72 @@ fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8],Vec<PAData>> {
         }
     )
 }
+
+/// Parse a Kerberos AP Request
+///
+/// <pre>
+/// AP-REQ          ::= [APPLICATION 14] SEQUENCE {
+///         pvno            [0] INTEGER (5),
+///         msg-type        [1] INTEGER (14),
+///         ap-options      [2] APOptions,
+///         ticket          [3] Ticket,
+///         authenticator   [4] EncryptedData -- Authenticator
+/// }
+///
+/// APOptions       ::= KerberosFlags
+///         -- reserved(0),
+///         -- use-session-key(1),
+///         -- mutual-required(2)
+/// </pre>
+pub fn parse_ap_req<'a>(i: &'a[u8]) -> IResult<&'a[u8],ApReq<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 14,
+        st: parse_der_struct!(
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+                     error_if!(pvno != 5, ErrorKind::Tag) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+                     error_if!(msgtype != 14, ErrorKind::Tag) >>
+            flags:   parse_der_tagged!(EXPLICIT 2,parse_kerberos_flags) >>
+            ticket:  parse_der_tagged!(EXPLICIT 3,parse_krb5_ticket) >>
+            auth:    parse_der_tagged!(EXPLICIT 4,parse_encrypted) >>
+            ( ApReq{
+                pvno: pvno,
+                msg_type: MessageType(msgtype),
+                ap_options: flags,
+                ticket: ticket,
+                authenticator: auth,
+            })
+        )
+        >> (st)
+    ).map(|t| (t.1).1)
+}
+
+/// Parse a Kerberos AP Reply
+///
+/// <pre>
+/// AP-REP          ::= [APPLICATION 15] SEQUENCE {
+///         pvno            [0] INTEGER (5),
+///         msg-type        [1] INTEGER (15),
+///         enc-part        [2] EncryptedData -- EncAPRepPart
+/// }
+/// </pre>
+pub fn parse_ap_rep<'a>(i: &'a[u8]) -> IResult<&'a[u8],ApRep<'a>> {
+    parse_der_application!(
+        i,
+        APPLICATION 15,
+        st: parse_der_struct!(
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+                     error_if!(pvno != 5, ErrorKind::Tag) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+                     error_if!(msgtype != 15, ErrorKind::Tag) >>
+            edata:   parse_der_tagged!(EXPLICIT 4,parse_encrypted) >>
+            ( ApRep{
+                pvno: pvno,
+                msg_type: MessageType(msgtype),
+                enc_part: edata,
+            })
+        )
+        >> (st)
+    ).map(|t| (t.1).1)
+}
