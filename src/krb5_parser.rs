@@ -491,7 +491,7 @@ pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8],PAData<'a>> {
     map_res!(
         i,
         parse_der_struct!(
-            t: dbg_dmp!(parse_der_tagged!(EXPLICIT 1, parse_der_int32)) >>
+            t: parse_der_tagged!(EXPLICIT 1, parse_der_int32) >>
             s: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring),|x: DerObject<'a>| x.as_slice()) >>
             ( PAData{
                 padata_type:  PAType(t),
