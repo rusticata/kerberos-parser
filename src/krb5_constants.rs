@@ -1,3 +1,5 @@
+// See https://www.iana.org/assignments/kerberos-parameters/kerberos-parameters.xhtml
+
 use std::fmt;
 
 /// Address type
