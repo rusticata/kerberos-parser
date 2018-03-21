@@ -12,7 +12,7 @@ categories = ["parsing"]
 [dependencies]
 nom = "3.2.1"
 rusticata-macros = "0.4"
-der-parser = "0.5.2"
+der-parser = "0.5.3"
 
 [badges]
 travis-ci = { repository = "rusticata/kerberos-parser" }
