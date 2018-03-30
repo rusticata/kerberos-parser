@@ -15,11 +15,3 @@ pub mod krb5;
 pub mod krb5_parser;
 
 mod krb5_constants;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
