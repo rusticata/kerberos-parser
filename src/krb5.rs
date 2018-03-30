@@ -2,7 +2,9 @@
 //!
 //! - [RFC1510](https://tools.ietf.org/html/rfc1510) The Kerberos Network Authentication Service (V5)
 //! - [RFC3961](https://tools.ietf.org/html/rfc3961) Encryption and Checksum Specifications for Kerberos 5
+//! - [RFC3962](https://tools.ietf.org/html/rfc3962) Advanced Encryption Standard (AES) Encryption for Kerberos 5
 //! - [RFC4120](https://tools.ietf.org/html/rfc4120) The Kerberos Network Authentication Service (V5)
+//! - [RFC6803](https://tools.ietf.org/html/rfc6803) Camellia Encryption for Kerberos 5
 
 use der_parser::DerObject;
 

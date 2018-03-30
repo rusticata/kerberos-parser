@@ -57,6 +57,8 @@ impl EncryptionType {
     pub const AES256_CTS_HMAC_SHA1_96      : EncryptionType = EncryptionType(18);
     pub const RC4_HMAC                     : EncryptionType = EncryptionType(23);
     pub const RC4_HMAC_EXP                 : EncryptionType = EncryptionType(24);
+    pub const CAMELLIA128_CTS_CMAC         : EncryptionType = EncryptionType(25);
+    pub const CAMELLIA256_CTS_CMAC         : EncryptionType = EncryptionType(26);
     pub const SUBKEY_KEYMATERIAL           : EncryptionType = EncryptionType(65);
     // negative values
     pub const RC4_MD4                      : EncryptionType = EncryptionType(-128);
@@ -92,6 +94,8 @@ impl fmt::Debug for EncryptionType {
             18   => f.write_str("aes256-cts-hmac-sha1-96"),
             23   => f.write_str("rc4-hmac"),
             24   => f.write_str("rc4-hmac-exp"),
+            25   => f.write_str("camellia128-cts-cmac"),
+            26   => f.write_str("camellia256-cts-cmac"),
             65   => f.write_str("subkey-keymaterial"),
             // negative values
             -128 => f.write_str("rc4-md4"),
