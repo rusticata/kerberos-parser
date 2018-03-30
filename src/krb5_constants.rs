@@ -55,6 +55,8 @@ impl EncryptionType {
     pub const DES3_CBC_SHA1_KD             : EncryptionType = EncryptionType(16);
     pub const AES128_CTS_HMAC_SHA1_96      : EncryptionType = EncryptionType(17);
     pub const AES256_CTS_HMAC_SHA1_96      : EncryptionType = EncryptionType(18);
+    pub const AES128_CTS_HMAC_SHA256_128   : EncryptionType = EncryptionType(19);
+    pub const AES256_CTS_HMAC_SHA384_192   : EncryptionType = EncryptionType(20);
     pub const RC4_HMAC                     : EncryptionType = EncryptionType(23);
     pub const RC4_HMAC_EXP                 : EncryptionType = EncryptionType(24);
     pub const CAMELLIA128_CTS_CMAC         : EncryptionType = EncryptionType(25);
@@ -92,6 +94,8 @@ impl fmt::Debug for EncryptionType {
             16   => f.write_str("des3-cbc-sha1-kd"),
             17   => f.write_str("aes128-cts-hmac-sha1-96"),
             18   => f.write_str("aes256-cts-hmac-sha1-96"),
+            19   => f.write_str("aes128-cts-hmac-sha256-128"),
+            20   => f.write_str("aes256-cts-hmac-sha384-192"),
             23   => f.write_str("rc4-hmac"),
             24   => f.write_str("rc4-hmac-exp"),
             25   => f.write_str("camellia128-cts-cmac"),

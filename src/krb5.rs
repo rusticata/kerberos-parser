@@ -5,6 +5,7 @@
 //! - [RFC3962](https://tools.ietf.org/html/rfc3962) Advanced Encryption Standard (AES) Encryption for Kerberos 5
 //! - [RFC4120](https://tools.ietf.org/html/rfc4120) The Kerberos Network Authentication Service (V5)
 //! - [RFC6803](https://tools.ietf.org/html/rfc6803) Camellia Encryption for Kerberos 5
+//! - [RFC8009](https://tools.ietf.org/html/rfc8009) AES Encryption with HMAC-SHA2 for Kerberos 5
 
 use der_parser::DerObject;
 
