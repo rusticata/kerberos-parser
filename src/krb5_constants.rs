@@ -229,6 +229,8 @@ impl PAType {
     pub const PA_ETYPE_INFO2      : PAType = PAType(19);
     /// Windows PAC request
     pub const PA_PAC_REQUEST      : PAType = PAType(128);
+    /// Support for FAST pre-auth mechanism
+    pub const PA_REQ_ENC_PA_REP   : PAType = PAType(149);
 }
 
 impl fmt::Debug for PAType {
@@ -240,6 +242,7 @@ impl fmt::Debug for PAType {
             11  => f.write_str("pa-etype-info"),
             19  => f.write_str("pa-etype-info2"),
             128 => f.write_str("pa-pac-request"),
+            149 => f.write_str("pa-req-enc-pa-rep"),
             n   => f.debug_tuple("PAType").field(&n).finish(),
         }
     }
