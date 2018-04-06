@@ -125,6 +125,26 @@ fn test_parse_as_rep() {
     }
 }
 
+static AP_REQ: &'static [u8] = include_bytes!("../assets/ap-req.bin");
+#[test]
+fn test_parse_ap_req() {
+    let bytes = AP_REQ;
+
+    let res = parse_ap_req(bytes);
+    // println!("parse_ap_req: {:?}", res);
+    match res {
+        IResult::Done(rem,req) => {
+            assert!(rem.is_empty());
+            assert_eq!(req.pvno, 5);
+            assert_eq!(req.msg_type, MessageType::KRB_AP_REQ);
+            assert_eq!(req.ticket.realm, Realm(String::from("DENYDC.COM")));
+            assert_eq!(req.ticket.sname,
+                       PrincipalName{ name_type:NameType::KRB_NT_SRV_INST, name_string:vec![String::from("krbtgt"),String::from("DENYDC.COM")] });
+        },
+        _ => assert!(false)
+    }
+}
+
 static KRB_ERROR: &'static [u8] = include_bytes!("../assets/krb-error.bin");
 #[test]
 fn test_parse_krb_error() {
