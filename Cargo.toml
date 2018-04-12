@@ -9,6 +9,16 @@ version = "0.1.2"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parsing"]
 
+include = [
+  "LICENSE-*",
+  ".gitignore",
+  ".travis.yml",
+  "Cargo.toml",
+  "assets/*.bin",
+  "src/*.rs",
+  "tests/*.rs"
+]
+
 [dependencies]
 nom = "3.2.1"
 rusticata-macros = "0.4"
