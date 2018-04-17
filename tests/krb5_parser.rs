@@ -178,3 +178,12 @@ fn test_parse_int32() {
     assert_eq!(parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),IResult::Done(empty,-1));
     assert_eq!(parse_der_int32(&[0x02, 0x04, 0x01, 0x23, 0x45, 0x67]),IResult::Done(empty,0x1234567));
 }
+
+#[test]
+fn test_principalname_display() {
+    let pn = PrincipalName{
+        name_type:  NameType::KRB_NT_SRV_INST,
+        name_string: vec!["krb5".to_string(), "DOMAIN.COM".to_string()],
+    };
+    assert_eq!("krb5/DOMAIN.COM",format!("{}", pn));
+}

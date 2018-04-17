@@ -7,6 +7,7 @@
 //! - [RFC6803](https://tools.ietf.org/html/rfc6803) Camellia Encryption for Kerberos 5
 //! - [RFC8009](https://tools.ietf.org/html/rfc8009) AES Encryption with HMAC-SHA2 for Kerberos 5
 
+use std::fmt;
 use der_parser::DerObject;
 
 pub use krb5_constants::*;
@@ -30,6 +31,12 @@ pub struct Realm(pub String);
 pub struct PrincipalName {
     pub name_type: NameType,
     pub name_string: Vec<String>,
+}
+
+impl fmt::Display for PrincipalName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.name_string.join("/"))
+    }
 }
 
 /// Kerberos Ticket
