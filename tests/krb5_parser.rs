@@ -157,7 +157,7 @@ fn test_parse_krb_error() {
             assert!(rem.is_empty());
             assert_eq!(err.pvno, 5);
             assert_eq!(err.msg_type, MessageType::KRB_ERROR);
-            assert_eq!(err.error_code, 14);
+            assert_eq!(err.error_code, ErrorCode::KDC_ERR_ETYPE_NOSUPP);
             assert_eq!(err.realm, Realm(String::from("DENYDC")));
             assert_eq!(err.sname,
                        PrincipalName{ name_type:NameType::KRB_NT_SRV_INST, name_string:vec![String::from("krbtgt"),String::from("DENYDC")] });

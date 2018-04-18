@@ -456,7 +456,7 @@ pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
                 cusec: cusec,
                 stime: stime,
                 susec: susec,
-                error_code: errorc as i32, // XXX i32
+                error_code: ErrorCode(errorc),
                 crealm: crealm,
                 cname: cname,
                 realm: realm,

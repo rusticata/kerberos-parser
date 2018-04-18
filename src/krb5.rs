@@ -11,6 +11,7 @@ use std::fmt;
 use der_parser::DerObject;
 
 pub use krb5_constants::*;
+pub use krb5_errors::*;
 
 /// Kerberos Realm
 ///
@@ -136,7 +137,7 @@ pub struct KrbError<'a> {
     pub cusec: Option<u32>,
     pub stime: DerObject<'a>,
     pub susec: u32,
-    pub error_code: i32,
+    pub error_code: ErrorCode,
     pub crealm: Option<Realm>,
     pub cname: Option<PrincipalName>,
     pub realm: Realm,
