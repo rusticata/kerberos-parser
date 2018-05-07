@@ -1,7 +1,7 @@
 //! Kerberos 5 parsing functions
 
 use nom::{IResult,ErrorKind};
-use der_parser::{parse_der,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
+use der_parser::{parse_der,parse_der_u32,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
 use std::str;
 
 use krb5::*;
@@ -27,16 +27,6 @@ pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8],i32> {
             _ => Err(DerError::DerTypeError)
         }
     })
-}
-
-/// Parse an unsigned 32 bits integer
-///
-/// <pre>
-/// UInt32          ::= INTEGER (0..4294967295)
-///                     -- unsigned 32 bit values
-/// </pre>
-pub fn parse_der_uint32(i:&[u8]) -> IResult<&[u8],u32> {
-    map_res!(i, parse_der_integer,|x: DerObject| x.as_u32())
 }
 
 //  Microseconds    ::= INTEGER (0..999999)
@@ -188,7 +178,7 @@ pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
         APPLICATION 1,
         st: parse_der_struct!(
             TAG DerTag::Sequence,
-            no: parse_der_tagged!(EXPLICIT 0, parse_der_uint32) >>
+            no: parse_der_tagged!(EXPLICIT 0, parse_der_u32) >>
                 error_if!(no != 5, ErrorKind::Tag) >>
             r:  parse_der_tagged!(EXPLICIT 1, parse_krb5_realm) >>
             s:  parse_der_tagged!(EXPLICIT 2, parse_krb5_principalname) >>
@@ -217,7 +207,7 @@ pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
         i,
         TAG DerTag::Sequence,
         e: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
-        k: opt!(parse_der_tagged!(EXPLICIT 1, parse_der_uint32)) >>
+        k: opt!(parse_der_tagged!(EXPLICIT 1, parse_der_u32)) >>
         c: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring), |x: DerObject<'a>| x.as_slice()) >>
            eof!() >>
         ( EncryptedData{
@@ -245,8 +235,8 @@ pub fn parse_kdc_req<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReq<'a>> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
-        n: parse_der_tagged!(EXPLICIT 1, parse_der_uint32) >>
-        t: parse_der_tagged!(EXPLICIT 2, parse_der_uint32) >>
+        n: parse_der_tagged!(EXPLICIT 1, parse_der_u32) >>
+        t: parse_der_tagged!(EXPLICIT 2, parse_der_u32) >>
         d: opt!(parse_der_tagged!(EXPLICIT 3, parse_krb5_padata_sequence)) >>
         b: parse_der_tagged!(EXPLICIT 4, parse_kdc_req_body) >>
            eof!() >>
@@ -294,7 +284,7 @@ pub fn parse_kdc_req_body<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcReqBody<'a>> {
         from:  opt!(parse_der_tagged!(EXPLICIT 4,parse_kerberos_time)) >>
         till:  parse_der_tagged!(EXPLICIT 5,parse_kerberos_time) >>
         rtime: opt!(complete!(parse_der_tagged!(EXPLICIT 6,parse_kerberos_time))) >>
-        nonce: parse_der_tagged!(EXPLICIT 7, parse_der_uint32) >>
+        nonce: parse_der_tagged!(EXPLICIT 7, parse_der_u32) >>
         etype: parse_der_tagged!(EXPLICIT 8,
                                  parse_der_struct!(v: many1!(parse_der_int32) >> (v.iter().map(|&x| EncryptionType(x)).collect()))
                                  ) >>
@@ -367,8 +357,8 @@ pub fn parse_kdc_rep<'a>(i:&'a[u8]) -> IResult<&'a[u8],KdcRep<'a>> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
-        pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
-        msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+        pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_u32) >>
+        msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_u32) >>
         padata:  opt!(parse_der_tagged!(EXPLICIT 2,parse_krb5_padata_sequence)) >>
         crealm:  parse_der_tagged!(EXPLICIT 3,parse_krb5_realm) >>
         cname:   parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
@@ -438,9 +428,9 @@ pub fn parse_krb_error<'a>(i:&'a[u8]) -> IResult<&'a[u8],KrbError<'a>> {
         APPLICATION 30,
         st: parse_der_struct!(
             TAG DerTag::Sequence,
-            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_u32) >>
                      error_if!(pvno != 5, ErrorKind::Tag) >>
-            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_u32) >>
                      error_if!(msgtype != 30, ErrorKind::Tag) >>
             ctime:   opt!(parse_der_tagged!(EXPLICIT 2,parse_kerberos_time)) >>
             cusec:   opt!(parse_der_tagged!(EXPLICIT 3,parse_der_microseconds)) >>
@@ -526,18 +516,18 @@ pub fn parse_ap_req<'a>(i: &'a[u8]) -> IResult<&'a[u8],ApReq<'a>> {
         APPLICATION 14,
         st: parse_der_struct!(
             TAG DerTag::Sequence,
-            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_u32) >>
                      error_if!(pvno != 5, ErrorKind::Tag) >>
-            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_u32) >>
                      error_if!(msgtype != 14, ErrorKind::Tag) >>
             flags:   parse_der_tagged!(EXPLICIT 2,parse_kerberos_flags) >>
             ticket:  parse_der_tagged!(EXPLICIT 3,parse_krb5_ticket) >>
             auth:    parse_der_tagged!(EXPLICIT 4,parse_encrypted) >>
             ( ApReq{
-                pvno: pvno,
+                pvno,
                 msg_type: MessageType(msgtype),
                 ap_options: flags,
-                ticket: ticket,
+                ticket,
                 authenticator: auth,
             })
         )
@@ -560,13 +550,13 @@ pub fn parse_ap_rep<'a>(i: &'a[u8]) -> IResult<&'a[u8],ApRep<'a>> {
         APPLICATION 15,
         st: parse_der_struct!(
             TAG DerTag::Sequence,
-            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_uint32) >>
+            pvno:    parse_der_tagged!(EXPLICIT 0,parse_der_u32) >>
                      error_if!(pvno != 5, ErrorKind::Tag) >>
-            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_uint32) >>
+            msgtype: parse_der_tagged!(EXPLICIT 1,parse_der_u32) >>
                      error_if!(msgtype != 15, ErrorKind::Tag) >>
             edata:   parse_der_tagged!(EXPLICIT 4,parse_encrypted) >>
             ( ApRep{
-                pvno: pvno,
+                pvno,
                 msg_type: MessageType(msgtype),
                 enc_part: edata,
             })
