@@ -52,16 +52,20 @@ fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
 /// KerberosString  ::= GeneralString (IA5String)
 /// </pre>
 pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
-    map_res!(
-        i,
-        parse_der_generalstring,
-        |x: DerObject| {
-            match str::from_utf8(x.as_slice().unwrap()) {
-                Ok(r)  => Ok(r.to_owned()),
-                Err(_) => Err("not a valid UTF-8 string")
+    match parse_der_generalstring(i) {
+        IResult::Done(rem,ref obj) => {
+            if let DerObjectContent::GeneralString(s) = obj.content {
+                match str::from_utf8(s) {
+                    Ok(r)  => IResult::Done(rem,r.to_owned()),
+                    Err(_) => IResult::Error(error_code!(ErrorKind::IsNotStr))
+                }
+            } else {
+                IResult::Error(error_code!(ErrorKind::Tag))
             }
-        }
-    )
+        },
+        IResult::Incomplete(i) => IResult::Incomplete(i),
+        IResult::Error(e) => IResult::Error(e)
+    }
 }
 
 fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8],Vec<String>> {
