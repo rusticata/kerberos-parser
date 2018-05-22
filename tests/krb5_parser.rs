@@ -1,7 +1,6 @@
 extern crate nom;
 extern crate kerberos_parser;
 
-use nom::IResult;
 use kerberos_parser::krb5::*;
 use kerberos_parser::krb5_parser::*;
 
@@ -9,20 +8,20 @@ use kerberos_parser::krb5_parser::*;
 fn test_parse_kerberos_string() {
     let bytes = &[0x1b, 0x04, 0x63, 0x69, 0x66, 0x73];
     let empty = &b""[..];
-    let expected = IResult::Done(empty,Realm(String::from("cifs")));
+    let expected = Realm(String::from("cifs"));
 
     let res = parse_krb5_realm(bytes);
-    assert_eq!(res,expected);
+    assert_eq!(res,Ok((empty,expected)));
 }
 
 #[test]
 fn test_parse_realm() {
     let bytes = &[0x1b, 0x05, 0x4a, 0x6f, 0x6e, 0x65, 0x73];
     let empty = &b""[..];
-    let expected = IResult::Done(empty,Realm(String::from("Jones")));
+    let expected = Realm(String::from("Jones"));
 
     let res = parse_krb5_realm(bytes);
-    assert_eq!(res,expected);
+    assert_eq!(res,Ok((empty,expected)));
 }
 
 #[test]
@@ -33,13 +32,13 @@ fn test_parse_principalname() {
             0xa1, 0x0a, 0x30, 0x81, 0x07, 0x1b, 0x05, 0x4a, 0x6f, 0x6e, 0x65, 0x73
     ];
     let empty = &b""[..];
-    let expected = IResult::Done(empty,PrincipalName{
+    let expected = PrincipalName{
         name_type: NameType(0),
         name_string: vec![String::from("Jones")]
-    });
+    };
 
     let res = parse_krb5_principalname(bytes);
-    assert_eq!(res,expected);
+    assert_eq!(res,Ok((empty,expected)));
 }
 
 #[test]
@@ -52,13 +51,13 @@ fn test_parse_principalname2() {
             0x1b, 0x16, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x2d, 0x50, 0x43, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x6f, 0x73, 0x6f, 0x2e, 0x6c, 0x6f, 0x63, 0x61, 0x6c,
     ];
     let empty = &b""[..];
-    let expected = IResult::Done(empty,PrincipalName{
+    let expected = PrincipalName{
         name_type: NameType::KRB_NT_SRV_INST,
         name_string: vec![String::from("cifs"),String::from("Admin-PC.contoso.local")]
-    });
+    };
 
     let res = parse_krb5_principalname(bytes);
-    assert_eq!(res,expected);
+    assert_eq!(res,Ok((empty,expected)));
 }
 
 static KRB5_TICKET: &'static [u8] = include_bytes!("../assets/krb5-ticket.bin");
@@ -69,7 +68,7 @@ fn test_parse_ticket() {
     let res = parse_krb5_ticket(bytes);
     // println!("parse_krb5_ticket: {:?}", res);
     match res {
-        IResult::Done(rem,tkt) => {
+        Ok((rem,tkt)) => {
             assert!(rem.is_empty());
             assert_eq!(tkt.tkt_vno, 5);
             assert_eq!(tkt.realm, Realm(String::from("CONTOSO.LOCAL")));
@@ -91,7 +90,7 @@ fn test_parse_as_req() {
     let res = parse_as_req(bytes);
     // println!("parse_as_req: {:?}", res);
     match res {
-        IResult::Done(rem,req) => {
+        Ok((rem,req)) => {
             assert!(rem.is_empty());
             assert_eq!(req.pvno, 5);
             assert_eq!(req.msg_type, MessageType::KRB_AS_REQ);
@@ -113,7 +112,7 @@ fn test_parse_as_rep() {
     let res = parse_as_rep(bytes);
     // println!("parse_as_rep: {:?}", res);
     match res {
-        IResult::Done(rem,req) => {
+        Ok((rem,req)) => {
             assert!(rem.is_empty());
             assert_eq!(req.pvno, 5);
             assert_eq!(req.msg_type, MessageType::KRB_AS_REP);
@@ -133,7 +132,7 @@ fn test_parse_ap_req() {
     let res = parse_ap_req(bytes);
     // println!("parse_ap_req: {:?}", res);
     match res {
-        IResult::Done(rem,req) => {
+        Ok((rem,req)) => {
             assert!(rem.is_empty());
             assert_eq!(req.pvno, 5);
             assert_eq!(req.msg_type, MessageType::KRB_AP_REQ);
@@ -153,7 +152,7 @@ fn test_parse_krb_error() {
     let res = parse_krb_error(bytes);
     // println!("parse_krb_error: {:?}", res);
     match res {
-        IResult::Done(rem,err) => {
+        Ok((rem,err)) => {
             assert!(rem.is_empty());
             assert_eq!(err.pvno, 5);
             assert_eq!(err.msg_type, MessageType::KRB_ERROR);
@@ -169,14 +168,14 @@ fn test_parse_krb_error() {
 #[test]
 fn test_parse_int32() {
     let empty = &b""[..];
-    assert_eq!(parse_der_int32(&[0x02, 0x01, 0xff]),IResult::Done(empty,-1));
-    assert_eq!(parse_der_int32(&[0x02, 0x01, 0x01]),IResult::Done(empty,1));
-    assert_eq!(parse_der_int32(&[0x02, 0x02, 0xff, 0xff]),IResult::Done(empty,-1));
-    assert_eq!(parse_der_int32(&[0x02, 0x02, 0x01, 0x23]),IResult::Done(empty,0x123));
-    assert_eq!(parse_der_int32(&[0x02, 0x03, 0xff, 0xff, 0xff]),IResult::Done(empty,-1));
-    assert_eq!(parse_der_int32(&[0x02, 0x03, 0x01, 0x23, 0x45]),IResult::Done(empty,0x12345));
-    assert_eq!(parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),IResult::Done(empty,-1));
-    assert_eq!(parse_der_int32(&[0x02, 0x04, 0x01, 0x23, 0x45, 0x67]),IResult::Done(empty,0x1234567));
+    assert_eq!(parse_der_int32(&[0x02, 0x01, 0xff]),Ok((empty,-1)));
+    assert_eq!(parse_der_int32(&[0x02, 0x01, 0x01]),Ok((empty,1)));
+    assert_eq!(parse_der_int32(&[0x02, 0x02, 0xff, 0xff]),Ok((empty,-1)));
+    assert_eq!(parse_der_int32(&[0x02, 0x02, 0x01, 0x23]),Ok((empty,0x123)));
+    assert_eq!(parse_der_int32(&[0x02, 0x03, 0xff, 0xff, 0xff]),Ok((empty,-1)));
+    assert_eq!(parse_der_int32(&[0x02, 0x03, 0x01, 0x23, 0x45]),Ok((empty,0x12345)));
+    assert_eq!(parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),Ok((empty,-1)));
+    assert_eq!(parse_der_int32(&[0x02, 0x04, 0x01, 0x23, 0x45, 0x67]),Ok((empty,0x1234567)));
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! Kerberos 5 parsing functions
 
-use nom::{IResult,ErrorKind};
+use nom::{IResult,Err,ErrorKind};
 use der_parser::{parse_der,parse_der_u32,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
 use std::str;
 
@@ -40,23 +40,23 @@ fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
 macro_rules! opt_parse_der_tagged(
     ($i:expr, EXPLICIT $tag:expr, $submac:ident!( $($args:tt)*)) => ({
         use der_parser::der_read_element_header;
-        use nom::Needed;
+        use nom::{Err,Needed};
         match der_read_element_header($i) {
-            IResult::Done(rem,hdr) => {
+            Ok((rem,hdr)) => {
                 if hdr.tag != $tag {
-                    IResult::Done($i,None)
+                    Ok(($i,None))
                 } else {
                     let len = hdr.len as usize;
-                    if rem.len() < len { IResult::Incomplete(Needed::Size(len)) } // tag was correct, this really is an error
+                    if rem.len() < len { Err(Err::Incomplete(Needed::Size(len))) } // tag was correct, this really is an error
                     else {
                         match $submac!(&rem[0..len], $($args)*) {
-                            IResult::Done(_,res)   => IResult::Done(&rem[len..],Some(res)),
-                            _                      => IResult::Done($i,None)
+                            Ok((_,res)) => Ok((&rem[len..],Some(res))),
+                            _           => Ok(($i,None))
                         }
                     }
                 }
             },
-            _                      => IResult::Done($i,None)
+            _             => Ok(($i,None))
         }
     });
     ($i:expr, EXPLICIT $tag:expr, $f:ident) => ({
@@ -71,18 +71,17 @@ macro_rules! opt_parse_der_tagged(
 /// </pre>
 pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
     match parse_der_generalstring(i) {
-        IResult::Done(rem,ref obj) => {
+        Ok((rem,ref obj)) => {
             if let DerObjectContent::GeneralString(s) = obj.content {
                 match str::from_utf8(s) {
-                    Ok(r)  => IResult::Done(rem,r.to_owned()),
-                    Err(_) => IResult::Error(error_code!(ErrorKind::IsNotStr))
+                    Ok(r)  => Ok((rem,r.to_owned())),
+                    Err(_) => Err(Err::Error(error_position!(i, ErrorKind::IsNotStr)))
                 }
             } else {
-                IResult::Error(error_code!(ErrorKind::Tag))
+                Err(Err::Error(error_position!(i, ErrorKind::Tag)))
             }
         },
-        IResult::Incomplete(i) => IResult::Incomplete(i),
-        IResult::Error(e) => IResult::Error(e)
+        Err(e)            => Err(e)
     }
 }
 
@@ -90,9 +89,9 @@ fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8],Vec<String>> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
-        v: many0!(parse_kerberos_string) >>
+        v: many0!(complete!(parse_kerberos_string)) >>
         ( v )
-    ).map(|x| x.1)
+    ).map(|(rem,x)| (rem,x.1))
 }
 
 /// Parse Kerberos flags
@@ -168,7 +167,7 @@ pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8],HostAddress<'a>
             addr_type: AddressType(t),
             address: a,
         })
-    ).map(|x| x.1)
+    ).map(|(rem,x)| (rem,x.1))
 }
 
 /// Parse Kerberos HostAddresses
@@ -184,9 +183,9 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8],Vec<HostAddress>> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
-        v: many0!(parse_krb5_hostaddress) >>
+        v: many0!(complete!(parse_krb5_hostaddress)) >>
         ( v )
-    ).map(|x| x.1)
+    ).map(|(rem,x)| (rem,x.1))
 }
 
 
@@ -218,7 +217,7 @@ pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
                 enc_part: e
             })
         ) >> (st)
-    ).map(|t| (t.1).1)
+    ).map(|(rem,t)| (rem,(t.1).1))
 }
 
 /// Parse Kerberos EncryptedData
@@ -237,13 +236,13 @@ pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
         e: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
         k: opt_parse_der_tagged!(EXPLICIT 1, parse_der_u32) >>
         c: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring), |x: DerObject<'a>| x.as_slice()) >>
-           eof!() >>
+           empty!() >>
         ( EncryptedData{
             etype: EncryptionType(e),
             kvno: k,
             cipher: c
         })
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 
@@ -267,14 +266,14 @@ pub fn parse_kdc_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
         t:        parse_der_tagged!(EXPLICIT 2, parse_der_u32) >>
         d:        opt_parse_der_tagged!(EXPLICIT 3, parse_krb5_padata_sequence) >>
         req_body: parse_der_tagged!(EXPLICIT 4, parse_kdc_req_body) >>
-                  eof!() >>
+                  empty!() >>
         ( KdcReq{
             pvno,
             msg_type: MessageType(t),
             padata: d.unwrap_or_default(),
             req_body
         })
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse the body of a Kerberos KDC Request
@@ -314,14 +313,14 @@ pub fn parse_kdc_req_body(i:&[u8]) -> IResult<&[u8],KdcReqBody> {
         rtime: opt_parse_der_tagged!(EXPLICIT 6,parse_kerberos_time) >>
         nonce: parse_der_tagged!(EXPLICIT 7, parse_der_u32) >>
         etype: parse_der_tagged!(EXPLICIT 8,
-                                 parse_der_struct!(v: many1!(parse_der_int32) >> (v.iter().map(|&x| EncryptionType(x)).collect()))
+                                 parse_der_struct!(v: many1!(complete!(parse_der_int32)) >> (v.iter().map(|&x| EncryptionType(x)).collect()))
                                  ) >>
         addr:  opt_parse_der_tagged!(EXPLICIT 9,parse_krb5_hostaddresses) >>
         ead:   opt_parse_der_tagged!(EXPLICIT 10,parse_encrypted) >>
         atkts: opt_parse_der_tagged!(EXPLICIT 11,
-                                 parse_der_struct!(v: many1!(parse_krb5_ticket) >> (v))
+                                 parse_der_struct!(v: many1!(complete!(parse_krb5_ticket)) >> (v))
                                  ) >>
-               eof!() >>
+               empty!() >>
         ( KdcReqBody{
             kdc_options: o,
             cname,
@@ -336,7 +335,7 @@ pub fn parse_kdc_req_body(i:&[u8]) -> IResult<&[u8],KdcReqBody> {
             enc_authorization_data: ead,
             additional_tickets: if atkts.is_some() { atkts.unwrap().1 } else { vec![] }
         })
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos AS Request
@@ -349,7 +348,7 @@ pub fn parse_as_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
         i,
         APPLICATION 10,
         req: parse_kdc_req >> (req)
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos TGS Request
@@ -362,7 +361,7 @@ pub fn parse_tgs_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
         i,
         APPLICATION 12,
         req: parse_kdc_req >> (req)
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos KDC Reply
@@ -392,7 +391,7 @@ pub fn parse_kdc_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
         cname:    parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
         ticket:   parse_der_tagged!(EXPLICIT 5,parse_krb5_ticket) >>
         enc_part: parse_der_tagged!(EXPLICIT 6,parse_encrypted) >>
-                  eof!() >>
+                  empty!() >>
         ( KdcRep{
             pvno,
             msg_type: MessageType(msgtype),
@@ -402,7 +401,7 @@ pub fn parse_kdc_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
             ticket,
             enc_part,
         })
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos AS Reply
@@ -415,7 +414,7 @@ pub fn parse_as_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
         i,
         APPLICATION 11,
         rep: parse_kdc_rep >> (rep)
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos TGS Reply
@@ -428,7 +427,7 @@ pub fn parse_tgs_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
         i,
         APPLICATION 13,
         rep: parse_kdc_rep >> (rep)
-    ).map(|t| t.1)
+    ).map(|(rem,t)| (rem,t.1))
 }
 
 /// Parse a Kerberos Error
@@ -487,7 +486,7 @@ pub fn parse_krb_error(i:&[u8]) -> IResult<&[u8],KrbError> {
             })
         )
         >> (st)
-    ).map(|t| (t.1).1)
+    ).map(|(rem,t)| (rem,(t.1).1))
 }
 
 /// Parse Kerberos PA-Data
@@ -509,16 +508,16 @@ pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8],PAData<'a>> {
             padata_type:  PAType(t),
             padata_value: s,
         })
-    ).map(|x| x.1)
+    ).map(|(rem,x)| (rem,x.1))
 }
 
 fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8],Vec<PAData>> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
-        v: many0!(parse_krb5_padata) >>
+        v: many0!(complete!(parse_krb5_padata)) >>
         ( v )
-    ).map(|x| x.1)
+    ).map(|(rem,x)| (rem,x.1))
 }
 
 /// Parse a Kerberos AP Request
@@ -558,7 +557,7 @@ pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8],ApReq> {
             })
         )
         >> (st)
-    ).map(|t| (t.1).1)
+    ).map(|(rem,t)| (rem,(t.1).1))
 }
 
 /// Parse a Kerberos AP Reply
@@ -587,5 +586,5 @@ pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8],ApRep> {
             })
         )
         >> (st)
-    ).map(|t| (t.1).1)
+    ).map(|(rem,t)| (rem,(t.1).1))
 }
