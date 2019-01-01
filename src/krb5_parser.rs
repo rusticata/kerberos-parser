@@ -4,7 +4,7 @@ use nom::{IResult,Err,ErrorKind};
 use der_parser::{parse_der,parse_der_u32,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
 use std::str;
 
-use krb5::*;
+use crate::krb5::*;
 
 /// Parse a signed 32 bits integer
 ///
