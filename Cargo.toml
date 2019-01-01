@@ -5,7 +5,7 @@ keywords = ["Kerberos","parser","nom"]
 homepage = "https://github.com/rusticata/kerberos-parser"
 repository = "https://github.com/rusticata/kerberos-parser.git"
 name = "kerberos-parser"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parsing"]
 
@@ -20,9 +20,9 @@ include = [
 ]
 
 [dependencies]
-nom = "4.0"
+nom = "4.1"
 rusticata-macros = "1.0"
-der-parser = "1.0"
+der-parser = { git = "https://github.com/dbcfd/der-parser.git", branch = "nom41" }
 
 [badges]
 travis-ci = { repository = "rusticata/kerberos-parser" }
