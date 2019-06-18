@@ -1,7 +1,9 @@
 //! Kerberos 5 parsing functions
 
 use nom::{IResult,Err,ErrorKind};
-use der_parser::{parse_der,parse_der_u32,parse_der_bitstring,parse_der_generalstring,parse_der_integer,parse_der_generalizedtime,parse_der_octetstring,DerObject,DerObjectHeader,DerObjectContent,DerTag,DerError};
+use der_parser::ber::*;
+use der_parser::der::*;
+use der_parser::error::*;
 use std::str;
 
 use krb5::*;
@@ -15,16 +17,16 @@ use krb5::*;
 pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8],i32> {
     map_res!(i, parse_der_integer,|x: DerObject| {
         match x.content {
-            DerObjectContent::Integer(i) => {
+            BerObjectContent::Integer(i) => {
                 match i.len() {
                     1 => Ok(  i[0] as i8 as i32),
                     2 => Ok( (i[0] as i8 as i32) << 8  | (i[1] as i32) ),
                     3 => Ok( (i[0] as i8 as i32) << 16 | (i[1] as i32) << 8 | (i[2] as i32) ),
                     4 => Ok( (i[0] as i8 as i32) << 24 | (i[1] as i32) << 16 | (i[2] as i32) << 8 | (i[3] as i32) ),
-                    _ => Err(DerError::IntegerTooLarge),
+                    _ => Err(BerError::IntegerTooLarge),
                 }
             }
-            _ => Err(DerError::DerTypeError)
+            _ => Err(BerError::BerTypeError)
         }
     })
 }
@@ -39,11 +41,11 @@ fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
 // less complexity, and faster
 macro_rules! opt_parse_der_tagged(
     ($i:expr, EXPLICIT $tag:expr, $submac:ident!( $($args:tt)*)) => ({
-        use der_parser::der_read_element_header;
+        use der_parser::der::der_read_element_header;
         use nom::{Err,Needed};
         match der_read_element_header($i) {
             Ok((rem,hdr)) => {
-                if hdr.tag != $tag {
+                if $tag != hdr.tag.0 {
                     Ok(($i,None))
                 } else {
                     let len = hdr.len as usize;
@@ -72,7 +74,7 @@ macro_rules! opt_parse_der_tagged(
 pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
     match parse_der_generalstring(i) {
         Ok((rem,ref obj)) => {
-            if let DerObjectContent::GeneralString(s) = obj.content {
+            if let BerObjectContent::GeneralString(s) = obj.content {
                 match str::from_utf8(s) {
                     Ok(r)  => Ok((rem,r.to_owned())),
                     Err(_) => Err(Err::Error(error_position!(i, ErrorKind::IsNotStr)))
@@ -133,8 +135,8 @@ pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8],PrincipalName> {
                 name_string: s,
             })
         ),
-        |(hdr,t) : (DerObjectHeader,PrincipalName)| {
-            if hdr.tag != DerTag::Sequence as u8 { return Err("not a sequence!"); }
+        |(hdr,t) : (BerObjectHeader,PrincipalName)| {
+            if hdr.tag != BerTag::Sequence { return Err("not a sequence!"); }
             Ok(t)
         }
     )

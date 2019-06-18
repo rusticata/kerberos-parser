@@ -8,7 +8,7 @@
 //! - [RFC8009](https://tools.ietf.org/html/rfc8009) AES Encryption with HMAC-SHA2 for Kerberos 5
 
 use std::fmt;
-use der_parser::DerObject;
+use der_parser::der::DerObject;
 
 pub use krb5_constants::*;
 pub use krb5_errors::*;

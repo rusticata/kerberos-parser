@@ -11,6 +11,7 @@ categories = ["parsing"]
 
 include = [
   "LICENSE-*",
+  "README.md",
   ".gitignore",
   ".travis.yml",
   "Cargo.toml",
@@ -20,9 +21,9 @@ include = [
 ]
 
 [dependencies]
-nom = "4.0"
+nom = "4.2"
 rusticata-macros = "1.0"
-der-parser = "1.0"
+der-parser = "2.0.0-alpha1"
 
 [badges]
 travis-ci = { repository = "rusticata/kerberos-parser" }
