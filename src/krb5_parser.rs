@@ -77,7 +77,7 @@ pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
             if let BerObjectContent::GeneralString(s) = obj.content {
                 match str::from_utf8(s) {
                     Ok(r)  => Ok((rem,r.to_owned())),
-                    Err(_) => Err(Err::Error(error_position!(i, ErrorKind::IsNotStr)))
+                    Err(_) => Err(Err::Error(error_position!(i, ErrorKind::IsNot)))
                 }
             } else {
                 Err(Err::Error(error_position!(i, ErrorKind::Tag)))
