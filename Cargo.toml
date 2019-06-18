@@ -5,9 +5,10 @@ keywords = ["Kerberos","parser","nom"]
 homepage = "https://github.com/rusticata/kerberos-parser"
 repository = "https://github.com/rusticata/kerberos-parser.git"
 name = "kerberos-parser"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
-categories = ["parsing"]
+categories = ["parser-implementations"]
+readme = "README.md"
 
 include = [
   "LICENSE-*",
@@ -16,6 +17,7 @@ include = [
   ".travis.yml",
   "Cargo.toml",
   "assets/*.bin",
+  "benches/*.rs",
   "src/*.rs",
   "tests/*.rs"
 ]
