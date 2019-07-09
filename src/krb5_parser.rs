@@ -6,7 +6,7 @@ use der_parser::der::*;
 use der_parser::error::*;
 use std::str;
 
-use krb5::*;
+use crate::krb5::*;
 
 /// Parse a signed 32 bits integer
 ///

@@ -9,6 +9,7 @@ version = "0.3.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parser-implementations"]
 readme = "README.md"
+edition = "2018"
 
 include = [
   "LICENSE-*",
