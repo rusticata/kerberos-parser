@@ -6,6 +6,7 @@ use std::fmt;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AddressType(pub i32);
 
+#[rustfmt::skip]
 impl AddressType {
     pub const IPV4          : AddressType = AddressType(2);
     pub const DIRECTIONAL   : AddressType = AddressType(3);
@@ -19,6 +20,7 @@ impl AddressType {
 }
 
 impl fmt::Debug for AddressType {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             2  => f.write_str("IPv4"),
@@ -39,6 +41,7 @@ impl fmt::Debug for AddressType {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EncryptionType(pub i32);
 
+#[rustfmt::skip]
 impl EncryptionType {
     pub const DES_CBC_CRC                  : EncryptionType = EncryptionType(1);
     pub const DES_CBC_MD4                  : EncryptionType = EncryptionType(2);
@@ -77,6 +80,7 @@ impl EncryptionType {
 }
 
 impl fmt::Debug for EncryptionType {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             1    => f.write_str("des-cbc-crc"),
@@ -122,6 +126,7 @@ impl fmt::Debug for EncryptionType {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct MessageType(pub u32);
 
+#[rustfmt::skip]
 impl MessageType {
     /// Request for initial authentication
     pub const KRB_AS_REQ     : MessageType = MessageType(10);
@@ -150,6 +155,7 @@ impl MessageType {
 }
 
 impl fmt::Debug for MessageType {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             10 => f.write_str("KRB_AS_REQ"),
@@ -169,11 +175,11 @@ impl fmt::Debug for MessageType {
     }
 }
 
-
 /// Name type
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameType(pub i32);
 
+#[rustfmt::skip]
 impl NameType {
     /// Name type not known
     pub const KRB_NT_UNKNOWN        : NameType = NameType(0);
@@ -196,6 +202,7 @@ impl NameType {
 }
 
 impl fmt::Debug for NameType {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             0  => f.write_str("KRB_NT_UNKNOWN"),
@@ -216,6 +223,7 @@ impl fmt::Debug for NameType {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PAType(pub i32);
 
+#[rustfmt::skip]
 impl PAType {
     /// DER encoding of AP-REQ
     pub const PA_TGS_REQ          : PAType = PAType(1);
@@ -234,6 +242,7 @@ impl PAType {
 }
 
 impl fmt::Debug for PAType {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             1   => f.write_str("pa-tgs-req"),

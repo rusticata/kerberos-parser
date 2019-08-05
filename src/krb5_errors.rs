@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct ErrorCode(pub i32);
 
+#[rustfmt::skip]
 impl ErrorCode {
     pub const KDC_ERR_NONE                          : ErrorCode = ErrorCode(0);
     pub const KDC_ERR_NAME_EXP                      : ErrorCode = ErrorCode(1);
@@ -75,6 +76,7 @@ impl ErrorCode {
 }
 
 impl fmt::Debug for ErrorCode {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             0  => f.write_str("KDC_ERR_NONE"),
@@ -149,4 +151,3 @@ impl fmt::Debug for ErrorCode {
         }
     }
 }
-

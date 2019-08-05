@@ -7,8 +7,8 @@
 //! - [RFC6803](https://tools.ietf.org/html/rfc6803) Camellia Encryption for Kerberos 5
 //! - [RFC8009](https://tools.ietf.org/html/rfc8009) AES Encryption with HMAC-SHA2 for Kerberos 5
 
-use std::fmt;
 use der_parser::der::DerObject;
+use std::fmt;
 
 pub use crate::krb5_constants::*;
 pub use crate::krb5_errors::*;
@@ -113,7 +113,7 @@ pub struct KdcReqBody<'a> {
 #[derive(Debug, PartialEq)]
 pub struct HostAddress<'a> {
     pub addr_type: AddressType,
-    pub address: &'a[u8],
+    pub address: &'a [u8],
 }
 
 /// Key Distribution Center (KDC) Reply Message
@@ -149,24 +149,24 @@ pub struct KrbError<'a> {
 /// Kerberos PA-Data
 #[derive(Debug, PartialEq)]
 pub struct PAData<'a> {
-    pub padata_type:  PAType,
-    pub padata_value: &'a[u8],
+    pub padata_type: PAType,
+    pub padata_value: &'a [u8],
 }
 
 /// Kerberos AP Request
 #[derive(Debug, PartialEq)]
 pub struct ApReq<'a> {
-    pub pvno          : u32,
-    pub msg_type      : MessageType,
-    pub ap_options    : DerObject<'a>, // KerberosFlags
-    pub ticket        : Ticket<'a>,
-    pub authenticator : EncryptedData<'a>,
+    pub pvno: u32,
+    pub msg_type: MessageType,
+    pub ap_options: DerObject<'a>, // KerberosFlags
+    pub ticket: Ticket<'a>,
+    pub authenticator: EncryptedData<'a>,
 }
 
 /// Kerberos AP Reply
 #[derive(Debug, PartialEq)]
 pub struct ApRep<'a> {
-    pub pvno     : u32,
-    pub msg_type : MessageType,
-    pub enc_part : EncryptedData<'a>,
+    pub pvno: u32,
+    pub msg_type: MessageType,
+    pub enc_part: EncryptedData<'a>,
 }
