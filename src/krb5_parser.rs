@@ -1,6 +1,7 @@
 //! Kerberos 5 parsing functions
 
-use nom::{IResult,Err,ErrorKind};
+use nom::{Err, IResult};
+use nom::error::ErrorKind;
 use der_parser::ber::*;
 use der_parser::der::*;
 use der_parser::error::*;
@@ -14,7 +15,7 @@ use crate::krb5::*;
 /// Int32           ::= INTEGER (-2147483648..2147483647)
 ///                     -- signed values representable in 32 bits
 /// </pre>
-pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8],i32> {
+pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8], i32, BerError> {
     map_res!(i, parse_der_integer,|x: DerObject| {
         match x.content {
             BerObjectContent::Integer(i) => {
@@ -33,8 +34,8 @@ pub fn parse_der_int32(i:&[u8]) -> IResult<&[u8],i32> {
 
 //  Microseconds    ::= INTEGER (0..999999)
 //                      -- microseconds
-fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
-    verify!(i, parse_der_u32,|x: u32| x <= 999_999)
+fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8], u32, BerError> {
+    verify!(i, parse_der_u32,|x: &u32| *x <= 999_999)
 }
 
 // helper macro to give same result as opt!(complete!(parse_der_tagged!(i,tag,fn) but with
@@ -42,7 +43,7 @@ fn parse_der_microseconds(i:&[u8]) -> IResult<&[u8],u32> {
 macro_rules! opt_parse_der_tagged(
     ($i:expr, EXPLICIT $tag:expr, $submac:ident!( $($args:tt)*)) => ({
         use der_parser::der::der_read_element_header;
-        use nom::{Err,Needed};
+        use nom::{Err, Needed};
         match der_read_element_header($i) {
             Ok((rem,hdr)) => {
                 if $tag != hdr.tag.0 {
@@ -58,7 +59,7 @@ macro_rules! opt_parse_der_tagged(
                     }
                 }
             },
-            _             => Ok(($i,None))
+            _ => Ok(($i,None))
         }
     });
     ($i:expr, EXPLICIT $tag:expr, $f:ident) => ({
@@ -71,7 +72,7 @@ macro_rules! opt_parse_der_tagged(
 /// <pre>
 /// KerberosString  ::= GeneralString (IA5String)
 /// </pre>
-pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
+pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8], String, BerError> {
     match parse_der_generalstring(i) {
         Ok((rem,ref obj)) => {
             if let BerObjectContent::GeneralString(s) = obj.content {
@@ -87,7 +88,7 @@ pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8],String> {
     }
 }
 
-fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8],Vec<String>> {
+fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8], Vec<String>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -103,7 +104,8 @@ fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8],Vec<String>> {
 ///                     -- minimum number of bits shall be sent,
 ///                     -- but no fewer than 32
 /// </pre>
-pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8],DerObject> {
+#[inline]
+pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
     parse_der_bitstring(i)
 }
 
@@ -112,7 +114,8 @@ pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8],DerObject> {
 /// <pre>
 /// Realm           ::= KerberosString
 /// </pre>
-pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8],Realm> {
+#[inline]
+pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8], Realm, BerError> {
     map!(i, parse_kerberos_string, Realm)
 }
 
@@ -124,7 +127,7 @@ pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8],Realm> {
 ///         name-string     [1] SEQUENCE OF KerberosString
 /// }
 /// </pre>
-pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8],PrincipalName> {
+pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8], PrincipalName, BerError> {
     map_res!(
         i,
         parse_der_struct!(
@@ -147,7 +150,8 @@ pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8],PrincipalName> {
 /// <pre>
 /// KerberosTime    ::= GeneralizedTime -- with no fractional seconds
 /// </pre>
-pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8],DerObject> {
+#[inline]
+pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
     parse_der_generalizedtime(i)
 }
 
@@ -159,7 +163,7 @@ pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8],DerObject> {
 ///         address         [1] OCTET STRING
 /// }
 /// </pre>
-pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8],HostAddress<'a>> {
+pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8], HostAddress<'a>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -181,7 +185,7 @@ pub fn parse_krb5_hostaddress<'a>(i: &'a[u8]) -> IResult<&'a[u8],HostAddress<'a>
 ///                 -- but has a value mapping and encodes the same
 ///         ::= SEQUENCE OF HostAddress
 /// </pre>
-pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8],Vec<HostAddress>> {
+pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -201,7 +205,7 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8],Vec<HostAddress>> {
 ///         enc-part        [3] EncryptedData -- EncTicketPart
 /// }
 /// </pre>
-pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
+pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8], Ticket<'a>, BerError> {
     parse_der_application!(
         i,
         APPLICATION 1,
@@ -231,7 +235,7 @@ pub fn parse_krb5_ticket<'a>(i: &'a[u8]) -> IResult<&'a[u8],Ticket<'a>> {
 ///         cipher  [2] OCTET STRING -- ciphertext
 /// }
 /// </pre>
-pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
+pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8], EncryptedData<'a>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -260,7 +264,7 @@ pub fn parse_encrypted<'a>(i:&'a[u8]) -> IResult<&'a[u8],EncryptedData<'a>> {
 ///         req-body        [4] KDC-REQ-BODY
 /// }
 /// </pre>
-pub fn parse_kdc_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
+pub fn parse_kdc_req(i:&[u8]) -> IResult<&[u8], KdcReq, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -302,7 +306,7 @@ pub fn parse_kdc_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
 ///                                        -- NOTE: not empty
 /// }
 /// </pre>
-pub fn parse_kdc_req_body(i:&[u8]) -> IResult<&[u8],KdcReqBody> {
+pub fn parse_kdc_req_body(i:&[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -345,7 +349,7 @@ pub fn parse_kdc_req_body(i:&[u8]) -> IResult<&[u8],KdcReqBody> {
 /// <pre>
 /// AS-REQ          ::= [APPLICATION 10] KDC-REQ
 /// </pre>
-pub fn parse_as_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
+pub fn parse_as_req(i:&[u8]) -> IResult<&[u8], KdcReq, BerError> {
     parse_der_application!(
         i,
         APPLICATION 10,
@@ -358,7 +362,7 @@ pub fn parse_as_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
 /// <pre>
 /// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
 /// </pre>
-pub fn parse_tgs_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
+pub fn parse_tgs_req(i:&[u8]) -> IResult<&[u8], KdcReq, BerError> {
     parse_der_application!(
         i,
         APPLICATION 12,
@@ -382,7 +386,7 @@ pub fn parse_tgs_req(i:&[u8]) -> IResult<&[u8],KdcReq> {
 ///                                 -- as appropriate
 /// }
 /// </pre>
-pub fn parse_kdc_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
+pub fn parse_kdc_rep(i:&[u8]) -> IResult<&[u8], KdcRep, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -411,7 +415,7 @@ pub fn parse_kdc_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
 /// <pre>
 /// AS-REP          ::= [APPLICATION 11] KDC-REP
 /// </pre>
-pub fn parse_as_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
+pub fn parse_as_rep(i:&[u8]) -> IResult<&[u8], KdcRep, BerError> {
     parse_der_application!(
         i,
         APPLICATION 11,
@@ -424,7 +428,7 @@ pub fn parse_as_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
 /// <pre>
 /// TGS-REP          ::= [APPLICATION 13] KDC-REP
 /// </pre>
-pub fn parse_tgs_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
+pub fn parse_tgs_rep(i:&[u8]) -> IResult<&[u8], KdcRep, BerError> {
     parse_der_application!(
         i,
         APPLICATION 13,
@@ -451,7 +455,7 @@ pub fn parse_tgs_rep(i:&[u8]) -> IResult<&[u8],KdcRep> {
 ///         e-data          [12] OCTET STRING OPTIONAL
 /// }
 /// </pre>
-pub fn parse_krb_error(i:&[u8]) -> IResult<&[u8],KrbError> {
+pub fn parse_krb_error(i:&[u8]) -> IResult<&[u8], KrbError, BerError> {
     parse_der_application!(
         i,
         APPLICATION 30,
@@ -500,7 +504,7 @@ pub fn parse_krb_error(i:&[u8]) -> IResult<&[u8],KrbError> {
 ///         padata-value    [2] OCTET STRING -- might be encoded AP-REQ
 /// }
 /// </pre>
-pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8],PAData<'a>> {
+pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8], PAData<'a>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -513,7 +517,7 @@ pub fn parse_krb5_padata<'a>(i: &'a[u8]) -> IResult<&'a[u8],PAData<'a>> {
     ).map(|(rem,x)| (rem,x.1))
 }
 
-fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8],Vec<PAData>> {
+fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData>, BerError> {
     parse_der_struct!(
         i,
         TAG DerTag::Sequence,
@@ -538,7 +542,7 @@ fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8],Vec<PAData>> {
 ///         -- use-session-key(1),
 ///         -- mutual-required(2)
 /// </pre>
-pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8],ApReq> {
+pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, BerError> {
     parse_der_application!(
         i,
         APPLICATION 14,
@@ -571,7 +575,7 @@ pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8],ApReq> {
 ///         enc-part        [2] EncryptedData -- EncAPRepPart
 /// }
 /// </pre>
-pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8],ApRep> {
+pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep, BerError> {
     parse_der_application!(
         i,
         APPLICATION 15,
