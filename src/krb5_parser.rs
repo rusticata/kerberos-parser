@@ -344,7 +344,7 @@ pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
             etype: etype.1,
             addresses: addr.unwrap_or_default(),
             enc_authorization_data: ead,
-            additional_tickets: if atkts.is_some() { atkts.unwrap().1 } else { vec![] }
+            additional_tickets: if let Some(v) = atkts { v.1 } else { vec![] }
         })
     ).map(|(rem,t)| (rem,t.1))
 }
