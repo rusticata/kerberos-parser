@@ -8,7 +8,7 @@ extern crate nom;
 
 use kerberos_parser::krb5_parser::*;
 
-static KRB5_TICKET: &'static [u8] = include_bytes!("../assets/krb5-ticket.bin");
+static KRB5_TICKET: &[u8] = include_bytes!("../assets/krb5-ticket.bin");
 
 #[bench]
 fn bench_parse_ticket(b: &mut Bencher) {
