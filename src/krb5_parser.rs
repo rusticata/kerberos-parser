@@ -247,7 +247,7 @@ pub fn parse_encrypted<'a>(i: &'a [u8]) -> IResult<&'a [u8], EncryptedData<'a>, 
         e: parse_der_tagged!(EXPLICIT 0, parse_der_int32) >>
         k: opt_parse_der_tagged!(EXPLICIT 1, parse_der_u32) >>
         c: map_res!(parse_der_tagged!(EXPLICIT 2, parse_der_octetstring), |x: DerObject<'a>| x.as_slice()) >>
-           empty!() >>
+           eof!() >>
         ( EncryptedData{
             etype: EncryptionType(e),
             kvno: k,
@@ -276,7 +276,7 @@ pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
         t:        parse_der_tagged!(EXPLICIT 2, parse_der_u32) >>
         d:        opt_parse_der_tagged!(EXPLICIT 3, parse_krb5_padata_sequence) >>
         req_body: parse_der_tagged!(EXPLICIT 4, parse_kdc_req_body) >>
-                  empty!() >>
+                  eof!() >>
         ( KdcReq{
             pvno,
             msg_type: MessageType(t),
@@ -331,7 +331,7 @@ pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
         atkts: opt_parse_der_tagged!(EXPLICIT 11,
                                  parse_der_struct!(v: many1!(complete!(parse_krb5_ticket)) >> (v))
                                  ) >>
-               empty!() >>
+               eof!() >>
         ( KdcReqBody{
             kdc_options: o,
             cname,
@@ -404,7 +404,7 @@ pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
         cname:    parse_der_tagged!(EXPLICIT 4,parse_krb5_principalname) >>
         ticket:   parse_der_tagged!(EXPLICIT 5,parse_krb5_ticket) >>
         enc_part: parse_der_tagged!(EXPLICIT 6,parse_encrypted) >>
-                  empty!() >>
+                  eof!() >>
         ( KdcRep{
             pvno,
             msg_type: MessageType(msgtype),
