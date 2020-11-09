@@ -56,7 +56,7 @@ pub struct Ticket<'a> {
     /// Components of the name part of the server's identity
     pub sname: PrincipalName,
     /// Encrypted encoding of the EncTicketPart sequence
-    pub enc_part: &'a [u8],
+    pub enc_part: EncryptedData<'a>,
 }
 
 /// Kerberos EncryptedData

@@ -42,7 +42,6 @@
 #[macro_use]
 extern crate nom;
 
-#[macro_use]
 extern crate rusticata_macros;
 
 #[macro_use]

@@ -76,7 +76,7 @@ fn test_parse_ticket() {
                     name_string: vec![String::from("cifs"), String::from("Admin-PC.contoso.local")]
                 }
             );
-            let enc = parse_encrypted(tkt.enc_part).unwrap().1;
+            let enc = &tkt.enc_part;
             // println!("enc: {:?}", enc);
             assert_eq!(enc.etype, EncryptionType::AES256_CTS_HMAC_SHA1_96);
             assert_eq!(enc.kvno, Some(1));
