@@ -57,7 +57,7 @@ fn test_parse_principalname2() {
     assert_eq!(res, Ok((empty, expected)));
 }
 
-static KRB5_TICKET: &'static [u8] = include_bytes!("../assets/krb5-ticket.bin");
+static KRB5_TICKET: &[u8] = include_bytes!("../assets/krb5-ticket.bin");
 #[test]
 fn test_parse_ticket() {
     let bytes = KRB5_TICKET;
@@ -81,11 +81,11 @@ fn test_parse_ticket() {
             assert_eq!(enc.etype, EncryptionType::AES256_CTS_HMAC_SHA1_96);
             assert_eq!(enc.kvno, Some(1));
         }
-        _ => assert!(false),
+        _ => panic!("parsing failed"),
     }
 }
 
-static AS_REQ: &'static [u8] = include_bytes!("../assets/as-req.bin");
+static AS_REQ: &[u8] = include_bytes!("../assets/as-req.bin");
 #[test]
 fn test_parse_as_req() {
     let bytes = AS_REQ;
@@ -113,11 +113,11 @@ fn test_parse_as_req() {
                 })
             );
         }
-        _ => assert!(false),
+        _ => panic!("parsing failed"),
     }
 }
 
-static AS_REP: &'static [u8] = include_bytes!("../assets/as-rep.bin");
+static AS_REP: &[u8] = include_bytes!("../assets/as-rep.bin");
 #[test]
 fn test_parse_as_rep() {
     let bytes = AS_REP;
@@ -138,11 +138,11 @@ fn test_parse_as_rep() {
                 }
             );
         }
-        _ => assert!(false),
+        _ => panic!("parsing failed"),
     }
 }
 
-static AP_REQ: &'static [u8] = include_bytes!("../assets/ap-req.bin");
+static AP_REQ: &[u8] = include_bytes!("../assets/ap-req.bin");
 #[test]
 fn test_parse_ap_req() {
     let bytes = AP_REQ;
@@ -163,11 +163,11 @@ fn test_parse_ap_req() {
                 }
             );
         }
-        _ => assert!(false),
+        _ => panic!("parsing failed"),
     }
 }
 
-static KRB_ERROR: &'static [u8] = include_bytes!("../assets/krb-error.bin");
+static KRB_ERROR: &[u8] = include_bytes!("../assets/krb-error.bin");
 #[test]
 fn test_parse_krb_error() {
     let bytes = KRB_ERROR;
@@ -189,7 +189,7 @@ fn test_parse_krb_error() {
                 }
             );
         }
-        _ => assert!(false),
+        _ => panic!("parsing failed"),
     }
 }
 
