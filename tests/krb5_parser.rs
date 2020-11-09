@@ -1,6 +1,3 @@
-extern crate kerberos_parser;
-extern crate nom;
-
 use kerberos_parser::krb5::*;
 use kerberos_parser::krb5_parser::*;
 

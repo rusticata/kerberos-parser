@@ -13,8 +13,6 @@
 //! Parsing a KRB_AS_REQ message:
 //!
 //! ```rust,no_run
-//! # extern crate nom;
-//! # extern crate kerberos_parser;
 //! use kerberos_parser::krb5::MessageType;
 //! use kerberos_parser::krb5_parser::parse_as_req;
 //!
@@ -38,14 +36,6 @@
 #![deny(/*missing_docs,*/unsafe_code,
         unstable_features,
         unused_import_braces, unused_qualifications)]
-
-#[macro_use]
-extern crate nom;
-
-extern crate rusticata_macros;
-
-#[macro_use]
-extern crate der_parser;
 
 pub mod krb5;
 pub mod krb5_parser;

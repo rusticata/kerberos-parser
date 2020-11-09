@@ -3,8 +3,8 @@
 use der_parser::ber::*;
 use der_parser::der::*;
 use der_parser::error::*;
-use nom::combinator::{complete, map, map_res, opt};
-use nom::error::ErrorKind;
+use nom::combinator::{complete, map, map_res, opt, verify};
+use nom::error::{make_error, ErrorKind};
 use nom::multi::many1;
 use nom::{Err, IResult};
 use std::str;
@@ -18,27 +18,25 @@ use crate::krb5::*;
 ///                     -- signed values representable in 32 bits
 /// </pre>
 pub fn parse_der_int32(i: &[u8]) -> IResult<&[u8], i32, BerError> {
-    map_res!(i, parse_der_integer, |x: DerObject| {
-        match x.content {
-            BerObjectContent::Integer(i) => match i.len() {
-                1 => Ok(i[0] as i8 as i32),
-                2 => Ok((i[0] as i8 as i32) << 8 | (i[1] as i32)),
-                3 => Ok((i[0] as i8 as i32) << 16 | (i[1] as i32) << 8 | (i[2] as i32)),
-                4 => Ok((i[0] as i8 as i32) << 24
-                    | (i[1] as i32) << 16
-                    | (i[2] as i32) << 8
-                    | (i[3] as i32)),
-                _ => Err(BerError::IntegerTooLarge),
-            },
-            _ => Err(BerError::BerTypeError),
-        }
-    })
+    map_res(parse_der_integer, |x: DerObject| match x.content {
+        BerObjectContent::Integer(i) => match i.len() {
+            1 => Ok(i[0] as i8 as i32),
+            2 => Ok((i[0] as i8 as i32) << 8 | (i[1] as i32)),
+            3 => Ok((i[0] as i8 as i32) << 16 | (i[1] as i32) << 8 | (i[2] as i32)),
+            4 => Ok((i[0] as i8 as i32) << 24
+                | (i[1] as i32) << 16
+                | (i[2] as i32) << 8
+                | (i[3] as i32)),
+            _ => Err(BerError::IntegerTooLarge),
+        },
+        _ => Err(BerError::BerTypeError),
+    })(i)
 }
 
 //  Microseconds    ::= INTEGER (0..999999)
 //                      -- microseconds
 fn parse_der_microseconds(i: &[u8]) -> IResult<&[u8], u32, BerError> {
-    verify!(i, parse_der_u32, |x: &u32| *x <= 999_999)
+    verify(parse_der_u32, |x: &u32| *x <= 999_999)(i)
 }
 
 /// Parse a Kerberos string object
@@ -52,10 +50,10 @@ pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8], String, BerError> {
             if let BerObjectContent::GeneralString(s) = obj.content {
                 match str::from_utf8(s) {
                     Ok(r) => Ok((rem, r.to_owned())),
-                    Err(_) => Err(Err::Error(error_position!(i, ErrorKind::IsNot))),
+                    Err(_) => Err(Err::Error(make_error(i, ErrorKind::IsNot))),
                 }
             } else {
-                Err(Err::Error(error_position!(i, ErrorKind::Tag)))
+                Err(Err::Error(make_error(i, ErrorKind::Tag)))
             }
         }
         Err(e) => Err(e),
@@ -63,12 +61,7 @@ pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8], String, BerError> {
 }
 
 fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8], Vec<String>, BerError> {
-    parse_der_struct!(
-        i,
-        TAG DerTag::Sequence,
-        v: many0!(complete!(parse_kerberos_string)) >>
-        ( v )
-    )
+    parse_ber_sequence_of_v(parse_kerberos_string)(i)
 }
 
 /// Parse Kerberos flags
@@ -90,7 +83,7 @@ pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
 /// </pre>
 #[inline]
 pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8], Realm, BerError> {
-    map!(i, parse_kerberos_string, Realm)
+    map(parse_kerberos_string, Realm)(i)
 }
 
 /// Parse Kerberos PrincipalName
