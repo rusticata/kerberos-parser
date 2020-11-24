@@ -95,11 +95,11 @@ pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8], Realm, BerError> {
 /// }
 /// </pre>
 pub fn parse_krb5_principalname(i: &[u8]) -> IResult<&[u8], PrincipalName, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
+    parse_ber_sequence_defined_g(|i, _| {
         let (i, name_type) =
-            parse_ber_tagged_explicit_g(0, |_, a| map(parse_der_int32, NameType)(a))(i)?;
+            parse_ber_tagged_explicit_g(0, |a, _| map(parse_der_int32, NameType)(a))(i)?;
         let (i, name_string) =
-            parse_ber_tagged_explicit_g(1, |_, a| parse_kerberos_string_sequence(a))(i)?;
+            parse_ber_tagged_explicit_g(1, |a, _| parse_kerberos_string_sequence(a))(i)?;
         Ok((
             i,
             PrincipalName {
@@ -129,10 +129,10 @@ pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
 /// }
 /// </pre>
 pub fn parse_krb5_hostaddress<'a>(i: &'a [u8]) -> IResult<&'a [u8], HostAddress<'a>, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
+    parse_ber_sequence_defined_g(|i, _| {
         let (i, addr_type) =
-            parse_ber_tagged_explicit_g(0, |_, a| map(parse_der_int32, AddressType)(a))(i)?;
-        let (i, address) = parse_ber_tagged_explicit_g(1, |_, a| {
+            parse_ber_tagged_explicit_g(0, |a, _| map(parse_der_int32, AddressType)(a))(i)?;
+        let (i, address) = parse_ber_tagged_explicit_g(1, |a, _| {
             map_res(parse_ber_octetstring, |o| o.as_slice())(a)
         })(i)?;
         Ok((i, HostAddress { addr_type, address }))
@@ -163,18 +163,18 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, Be
 /// }
 /// </pre>
 pub fn parse_krb5_ticket<'a>(i: &'a [u8]) -> IResult<&'a [u8], Ticket<'a>, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(1), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(1), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
-        parse_ber_sequence_defined_g(|_, i| {
-            let (i, tkt_vno) = parse_ber_tagged_explicit_g(0, |_, a| parse_der_u32(a))(i)?;
+        parse_ber_sequence_defined_g(|i, _| {
+            let (i, tkt_vno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
             if tkt_vno != 5 {
                 return Err(Err::Error(BerError::Custom(5)));
             }
-            let (i, realm) = parse_ber_tagged_explicit_g(1, |_, a| parse_krb5_realm(a))(i)?;
-            let (i, sname) = parse_ber_tagged_explicit_g(2, |_, a| parse_krb5_principalname(a))(i)?;
-            let (i, enc_part) = parse_ber_tagged_explicit_g(3, |_, a| parse_encrypted(a))(i)?;
+            let (i, realm) = parse_ber_tagged_explicit_g(1, |a, _| parse_krb5_realm(a))(i)?;
+            let (i, sname) = parse_ber_tagged_explicit_g(2, |a, _| parse_krb5_principalname(a))(i)?;
+            let (i, enc_part) = parse_ber_tagged_explicit_g(3, |a, _| parse_encrypted(a))(i)?;
             let tkt = Ticket {
                 tkt_vno,
                 realm,
@@ -196,14 +196,14 @@ pub fn parse_krb5_ticket<'a>(i: &'a [u8]) -> IResult<&'a [u8], Ticket<'a>, BerEr
 /// }
 /// </pre>
 pub fn parse_encrypted<'a>(i: &'a [u8]) -> IResult<&'a [u8], EncryptedData<'a>, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
+    parse_ber_sequence_defined_g(|i, _| {
         let (i, etype) =
-            parse_ber_tagged_explicit_g(0, |_, a| map(parse_der_int32, EncryptionType)(a))(i)?;
-        let (i, kvno) = opt(complete(parse_ber_tagged_explicit_g(1, |_, a| {
+            parse_ber_tagged_explicit_g(0, |a, _| map(parse_der_int32, EncryptionType)(a))(i)?;
+        let (i, kvno) = opt(complete(parse_ber_tagged_explicit_g(1, |a, _| {
             parse_der_u32(a)
         })))(i)?;
         let (i, cipher) =
-            parse_ber_tagged_explicit_g(2, |_, a| map_res(parse_der, |o| o.as_slice())(a))(i)?;
+            parse_ber_tagged_explicit_g(2, |a, _| map_res(parse_der, |o| o.as_slice())(a))(i)?;
         let enc = EncryptedData {
             etype,
             kvno,
@@ -226,13 +226,13 @@ pub fn parse_encrypted<'a>(i: &'a [u8]) -> IResult<&'a [u8], EncryptedData<'a>, 
 /// }
 /// </pre>
 pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
-        let (i, pvno) = parse_ber_tagged_explicit_g(1, |_, a| parse_der_u32(a))(i)?;
+    parse_ber_sequence_defined_g(|i, _| {
+        let (i, pvno) = parse_ber_tagged_explicit_g(1, |a, _| parse_der_u32(a))(i)?;
         let (i, msg_type) =
-            parse_ber_tagged_explicit_g(2, |_, a| map(parse_der_u32, MessageType)(a))(i)?;
-        let (i, padata) = parse_ber_tagged_explicit_g(3, |_, a| parse_krb5_padata_sequence(a))(i)
+            parse_ber_tagged_explicit_g(2, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
+        let (i, padata) = parse_ber_tagged_explicit_g(3, |a, _| parse_krb5_padata_sequence(a))(i)
             .unwrap_or_default();
-        let (i, req_body) = parse_ber_tagged_explicit_g(4, |_, a| parse_kdc_req_body(a))(i)?;
+        let (i, req_body) = parse_ber_tagged_explicit_g(4, |a, _| parse_kdc_req_body(a))(i)?;
         let req = KdcReq {
             pvno,
             msg_type,
@@ -268,37 +268,37 @@ pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
 /// }
 /// </pre>
 pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
-        let (i, kdc_options) = parse_ber_tagged_explicit_g(0, |_, a| parse_kerberos_flags(a))(i)?;
-        let (i, cname) = opt(complete(parse_ber_tagged_explicit_g(1, |_, a| {
+    parse_ber_sequence_defined_g(|i, _| {
+        let (i, kdc_options) = parse_ber_tagged_explicit_g(0, |a, _| parse_kerberos_flags(a))(i)?;
+        let (i, cname) = opt(complete(parse_ber_tagged_explicit_g(1, |a, _| {
             parse_krb5_principalname(a)
         })))(i)?;
-        let (i, realm) = parse_ber_tagged_explicit_g(2, |_, a| parse_krb5_realm(a))(i)?;
-        let (i, sname) = opt(complete(parse_ber_tagged_explicit_g(3, |_, a| {
+        let (i, realm) = parse_ber_tagged_explicit_g(2, |a, _| parse_krb5_realm(a))(i)?;
+        let (i, sname) = opt(complete(parse_ber_tagged_explicit_g(3, |a, _| {
             parse_krb5_principalname(a)
         })))(i)?;
-        let (i, from) = opt(complete(parse_ber_tagged_explicit_g(4, |_, a| {
+        let (i, from) = opt(complete(parse_ber_tagged_explicit_g(4, |a, _| {
             parse_kerberos_time(a)
         })))(i)?;
-        let (i, till) = parse_ber_tagged_explicit_g(5, |_, a| parse_kerberos_time(a))(i)?;
-        let (i, rtime) = opt(complete(parse_ber_tagged_explicit_g(6, |_, a| {
+        let (i, till) = parse_ber_tagged_explicit_g(5, |a, _| parse_kerberos_time(a))(i)?;
+        let (i, rtime) = opt(complete(parse_ber_tagged_explicit_g(6, |a, _| {
             parse_kerberos_time(a)
         })))(i)?;
-        let (i, nonce) = parse_ber_tagged_explicit_g(7, |_, a| parse_der_u32(a))(i)?;
-        let (i, etype) = parse_ber_tagged_explicit_g(8, |_, a| {
+        let (i, nonce) = parse_ber_tagged_explicit_g(7, |a, _| parse_der_u32(a))(i)?;
+        let (i, etype) = parse_ber_tagged_explicit_g(8, |a, _| {
             map(parse_ber_sequence_of_v(parse_der_int32), |v| {
                 v.iter().map(|&x| EncryptionType(x)).collect()
             })(a)
         })(i)?;
-        let (i, addresses) = opt(complete(parse_ber_tagged_explicit_g(9, |_, a| {
+        let (i, addresses) = opt(complete(parse_ber_tagged_explicit_g(9, |a, _| {
             parse_krb5_hostaddresses(a)
         })))(i)?;
         let addresses = addresses.unwrap_or_default();
         let (i, enc_authorization_data) =
-            opt(complete(parse_ber_tagged_explicit_g(10, |_, a| {
+            opt(complete(parse_ber_tagged_explicit_g(10, |a, _| {
                 parse_encrypted(a)
             })))(i)?;
-        let (i, additional_tickets) = opt(complete(parse_ber_tagged_explicit_g(11, |_, a| {
+        let (i, additional_tickets) = opt(complete(parse_ber_tagged_explicit_g(11, |a, _| {
             many1(complete(parse_krb5_ticket))(a)
         })))(i)?;
         let additional_tickets = additional_tickets.unwrap_or_default();
@@ -326,7 +326,7 @@ pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
 /// AS-REQ          ::= [APPLICATION 10] KDC-REQ
 /// </pre>
 pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(10), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(10), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -340,7 +340,7 @@ pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
 /// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
 /// </pre>
 pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(12), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(12), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -365,16 +365,16 @@ pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
 /// }
 /// </pre>
 pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
-        let (i, pvno) = parse_ber_tagged_explicit_g(0, |_, a| parse_der_u32(a))(i)?;
+    parse_ber_sequence_defined_g(|i, _| {
+        let (i, pvno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
         let (i, msg_type) =
-            parse_ber_tagged_explicit_g(1, |_, a| map(parse_der_u32, MessageType)(a))(i)?;
-        let (i, padata) = parse_ber_tagged_explicit_g(2, |_, a| parse_krb5_padata_sequence(a))(i)
+            parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
+        let (i, padata) = parse_ber_tagged_explicit_g(2, |a, _| parse_krb5_padata_sequence(a))(i)
             .unwrap_or_default();
-        let (i, crealm) = parse_ber_tagged_explicit_g(3, |_, a| parse_krb5_realm(a))(i)?;
-        let (i, cname) = parse_ber_tagged_explicit_g(4, |_, a| parse_krb5_principalname(a))(i)?;
-        let (i, ticket) = parse_ber_tagged_explicit_g(5, |_, a| parse_krb5_ticket(a))(i)?;
-        let (i, enc_part) = parse_ber_tagged_explicit_g(6, |_, a| parse_encrypted(a))(i)?;
+        let (i, crealm) = parse_ber_tagged_explicit_g(3, |a, _| parse_krb5_realm(a))(i)?;
+        let (i, cname) = parse_ber_tagged_explicit_g(4, |a, _| parse_krb5_principalname(a))(i)?;
+        let (i, ticket) = parse_ber_tagged_explicit_g(5, |a, _| parse_krb5_ticket(a))(i)?;
+        let (i, enc_part) = parse_ber_tagged_explicit_g(6, |a, _| parse_encrypted(a))(i)?;
         let rep = KdcRep {
             pvno,
             msg_type,
@@ -394,7 +394,7 @@ pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// AS-REP          ::= [APPLICATION 11] KDC-REP
 /// </pre>
 pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(11), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(11), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -408,7 +408,7 @@ pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// TGS-REP          ::= [APPLICATION 13] KDC-REP
 /// </pre>
 pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(13), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(13), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -436,37 +436,37 @@ pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// }
 /// </pre>
 pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(30), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(30), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
-        parse_ber_sequence_defined_g(|_, i| {
-            let (i, pvno) = parse_ber_tagged_explicit_g(0, |_, a| parse_der_u32(a))(i)?;
+        parse_ber_sequence_defined_g(|i, _| {
+            let (i, pvno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
             let (i, msg_type) =
-                parse_ber_tagged_explicit_g(1, |_, a| map(parse_der_u32, MessageType)(a))(i)?;
-            let (i, ctime) = opt(complete(parse_ber_tagged_explicit_g(2, |_, a| {
+                parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
+            let (i, ctime) = opt(complete(parse_ber_tagged_explicit_g(2, |a, _| {
                 parse_kerberos_time(a)
             })))(i)?;
-            let (i, cusec) = opt(complete(parse_ber_tagged_explicit_g(3, |_, a| {
+            let (i, cusec) = opt(complete(parse_ber_tagged_explicit_g(3, |a, _| {
                 parse_der_microseconds(a)
             })))(i)?;
-            let (i, stime) = parse_ber_tagged_explicit_g(4, |_, a| parse_kerberos_time(a))(i)?;
-            let (i, susec) = parse_ber_tagged_explicit_g(5, |_, a| parse_der_microseconds(a))(i)?;
+            let (i, stime) = parse_ber_tagged_explicit_g(4, |a, _| parse_kerberos_time(a))(i)?;
+            let (i, susec) = parse_ber_tagged_explicit_g(5, |a, _| parse_der_microseconds(a))(i)?;
             let (i, error_code) =
-                parse_ber_tagged_explicit_g(6, |_, a| map(parse_der_int32, ErrorCode)(a))(i)?;
-            let (i, crealm) = opt(complete(parse_ber_tagged_explicit_g(7, |_, a| {
+                parse_ber_tagged_explicit_g(6, |a, _| map(parse_der_int32, ErrorCode)(a))(i)?;
+            let (i, crealm) = opt(complete(parse_ber_tagged_explicit_g(7, |a, _| {
                 parse_krb5_realm(a)
             })))(i)?;
-            let (i, cname) = opt(complete(parse_ber_tagged_explicit_g(8, |_, a| {
+            let (i, cname) = opt(complete(parse_ber_tagged_explicit_g(8, |a, _| {
                 parse_krb5_principalname(a)
             })))(i)?;
-            let (i, realm) = parse_ber_tagged_explicit_g(9, |_, a| parse_krb5_realm(a))(i)?;
+            let (i, realm) = parse_ber_tagged_explicit_g(9, |a, _| parse_krb5_realm(a))(i)?;
             let (i, sname) =
-                parse_ber_tagged_explicit_g(10, |_, a| parse_krb5_principalname(a))(i)?;
-            let (i, etext) = opt(complete(parse_ber_tagged_explicit_g(11, |_, a| {
+                parse_ber_tagged_explicit_g(10, |a, _| parse_krb5_principalname(a))(i)?;
+            let (i, etext) = opt(complete(parse_ber_tagged_explicit_g(11, |a, _| {
                 parse_kerberos_string(a)
             })))(i)?;
-            let (i, edata) = opt(complete(parse_ber_tagged_explicit_g(12, |_, a| {
+            let (i, edata) = opt(complete(parse_ber_tagged_explicit_g(12, |a, _| {
                 parse_der_octetstring(a)
             })))(i)?;
             let err = KrbError {
@@ -499,11 +499,11 @@ pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, BerError> {
 /// }
 /// </pre>
 pub fn parse_krb5_padata<'a>(i: &'a [u8]) -> IResult<&'a [u8], PAData<'a>, BerError> {
-    parse_ber_sequence_defined_g(|_, i| {
+    parse_ber_sequence_defined_g(|i, _| {
         let (i, padata_type) =
-            parse_ber_tagged_explicit_g(1, |_, a| map(parse_der_int32, PAType)(a))(i)?;
+            parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_int32, PAType)(a))(i)?;
         let (i, padata_value) =
-            parse_ber_tagged_explicit_g(2, |_, a| map_res(parse_der, |o| o.as_slice())(a))(i)?;
+            parse_ber_tagged_explicit_g(2, |a, _| map_res(parse_der, |o| o.as_slice())(a))(i)?;
         let padata = PAData {
             padata_type,
             padata_value,
@@ -533,18 +533,18 @@ fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData>, BerError>
 ///         -- mutual-required(2)
 /// </pre>
 pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(14), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(14), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
-        parse_ber_sequence_defined_g(|_, i| {
-            let (i, pvno) = parse_ber_tagged_explicit_g(0, |_, a| parse_der_u32(a))(i)?;
+        parse_ber_sequence_defined_g(|i, _| {
+            let (i, pvno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
             let (i, msg_type) =
-                parse_ber_tagged_explicit_g(1, |_, a| map(parse_der_u32, MessageType)(a))(i)?;
+                parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
             let (i, ap_options) =
-                parse_ber_tagged_explicit_g(2, |_, a| parse_kerberos_flags(a))(i)?;
-            let (i, ticket) = parse_ber_tagged_explicit_g(3, |_, a| parse_krb5_ticket(a))(i)?;
-            let (i, authenticator) = parse_ber_tagged_explicit_g(4, |_, a| parse_encrypted(a))(i)?;
+                parse_ber_tagged_explicit_g(2, |a, _| parse_kerberos_flags(a))(i)?;
+            let (i, ticket) = parse_ber_tagged_explicit_g(3, |a, _| parse_krb5_ticket(a))(i)?;
+            let (i, authenticator) = parse_ber_tagged_explicit_g(4, |a, _| parse_encrypted(a))(i)?;
             let req = ApReq {
                 pvno,
                 msg_type,
@@ -567,15 +567,15 @@ pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, BerError> {
 /// }
 /// </pre>
 pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(15), |hdr, i| {
+    parse_ber_tagged_explicit_g(BerTag(15), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
-        parse_ber_sequence_defined_g(|_, i| {
-            let (i, pvno) = parse_ber_tagged_explicit_g(0, |_, a| parse_der_u32(a))(i)?;
+        parse_ber_sequence_defined_g(|i, _| {
+            let (i, pvno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
             let (i, msg_type) =
-                parse_ber_tagged_explicit_g(1, |_, a| map(parse_der_u32, MessageType)(a))(i)?;
-            let (i, enc_part) = parse_ber_tagged_explicit_g(2, |_, a| parse_encrypted(a))(i)?;
+                parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
+            let (i, enc_part) = parse_ber_tagged_explicit_g(2, |a, _| parse_encrypted(a))(i)?;
             let rep = ApRep {
                 pvno,
                 msg_type,

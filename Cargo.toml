@@ -26,7 +26,7 @@ include = [
 [dependencies]
 nom = "6.0"
 rusticata-macros = "3.0"
-der-parser = "5.0.0-beta1"
+der-parser = "5.0.0-beta2"
 
 [badges]
 travis-ci = { repository = "rusticata/kerberos-parser" }
