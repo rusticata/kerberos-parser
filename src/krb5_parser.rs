@@ -128,7 +128,7 @@ pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
 ///         address         [1] OCTET STRING
 /// }
 /// </pre>
-pub fn parse_krb5_hostaddress<'a>(i: &'a [u8]) -> IResult<&'a [u8], HostAddress<'a>, BerError> {
+pub fn parse_krb5_hostaddress(i: &[u8]) -> IResult<&[u8], HostAddress, BerError> {
     parse_ber_sequence_defined_g(|i, _| {
         let (i, addr_type) =
             parse_ber_tagged_explicit_g(0, |a, _| map(parse_der_int32, AddressType)(a))(i)?;
@@ -162,7 +162,7 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, Be
 ///         enc-part        [3] EncryptedData -- EncTicketPart
 /// }
 /// </pre>
-pub fn parse_krb5_ticket<'a>(i: &'a [u8]) -> IResult<&'a [u8], Ticket<'a>, BerError> {
+pub fn parse_krb5_ticket(i: &[u8]) -> IResult<&[u8], Ticket, BerError> {
     parse_ber_tagged_explicit_g(BerTag(1), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
@@ -195,7 +195,7 @@ pub fn parse_krb5_ticket<'a>(i: &'a [u8]) -> IResult<&'a [u8], Ticket<'a>, BerEr
 ///         cipher  [2] OCTET STRING -- ciphertext
 /// }
 /// </pre>
-pub fn parse_encrypted<'a>(i: &'a [u8]) -> IResult<&'a [u8], EncryptedData<'a>, BerError> {
+pub fn parse_encrypted(i: &[u8]) -> IResult<&[u8], EncryptedData, BerError> {
     parse_ber_sequence_defined_g(|i, _| {
         let (i, etype) =
             parse_ber_tagged_explicit_g(0, |a, _| map(parse_der_int32, EncryptionType)(a))(i)?;
@@ -498,7 +498,7 @@ pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, BerError> {
 ///         padata-value    [2] OCTET STRING -- might be encoded AP-REQ
 /// }
 /// </pre>
-pub fn parse_krb5_padata<'a>(i: &'a [u8]) -> IResult<&'a [u8], PAData<'a>, BerError> {
+pub fn parse_krb5_padata(i: &[u8]) -> IResult<&[u8], PAData, BerError> {
     parse_ber_sequence_defined_g(|i, _| {
         let (i, padata_type) =
             parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_int32, PAType)(a))(i)?;
