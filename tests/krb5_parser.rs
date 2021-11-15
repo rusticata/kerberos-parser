@@ -190,6 +190,31 @@ fn test_parse_krb_error() {
     }
 }
 
+static TGS_REP_NO_PADATA: &[u8] = include_bytes!("../assets/tgs-rep-no-padata.bin");
+#[test]
+fn test_parse_tgs_rep_no_padata() {
+    let bytes = TGS_REP_NO_PADATA;
+
+    let res = parse_tgs_rep(bytes);
+    match res {
+        Ok((rem, rep)) => {
+            assert!(rem.is_empty());
+            assert_eq!(rep.pvno, 5);
+            assert_eq!(rep.msg_type, MessageType::KRB_TGS_REP);
+            assert!(rep.padata.is_empty());
+            assert_eq!(rep.crealm, Realm(String::from("DENYDC.COM")));
+            assert_eq!(
+                rep.cname,
+                PrincipalName {
+                    name_type: NameType::KRB_NT_PRINCIPAL,
+                    name_string: vec![String::from("des")]
+                }
+            );
+        }
+        _ => panic!("parsing failed"),
+    }
+}
+
 #[test]
 fn test_parse_int32() {
     let empty = &b""[..];
