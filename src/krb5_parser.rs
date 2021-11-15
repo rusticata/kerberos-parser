@@ -231,7 +231,7 @@ pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
         let (i, msg_type) =
             parse_ber_tagged_explicit_g(2, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
         let (i, padata) = parse_ber_tagged_explicit_g(3, |a, _| parse_krb5_padata_sequence(a))(i)
-            .unwrap_or_default();
+            .unwrap_or_else(|_| (i, Vec::new()));
         let (i, req_body) = parse_ber_tagged_explicit_g(4, |a, _| parse_kdc_req_body(a))(i)?;
         let req = KdcReq {
             pvno,
@@ -370,7 +370,7 @@ pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
         let (i, msg_type) =
             parse_ber_tagged_explicit_g(1, |a, _| map(parse_der_u32, MessageType)(a))(i)?;
         let (i, padata) = parse_ber_tagged_explicit_g(2, |a, _| parse_krb5_padata_sequence(a))(i)
-            .unwrap_or_default();
+            .unwrap_or_else(|_| (i, Vec::new()));
         let (i, crealm) = parse_ber_tagged_explicit_g(3, |a, _| parse_krb5_realm(a))(i)?;
         let (i, cname) = parse_ber_tagged_explicit_g(4, |a, _| parse_krb5_principalname(a))(i)?;
         let (i, ticket) = parse_ber_tagged_explicit_g(5, |a, _| parse_krb5_ticket(a))(i)?;
