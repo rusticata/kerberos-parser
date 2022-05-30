@@ -1,13 +1,14 @@
 //! Kerberos 5 parsing functions
 
+use der_parser::asn1_rs::FromDer;
+use der_parser::asn1_rs::GeneralString;
+use der_parser::asn1_rs::ParseResult;
 use der_parser::ber::*;
 use der_parser::der::*;
 use der_parser::error::*;
 use nom::combinator::{complete, map, map_res, opt, verify};
-use nom::error::{make_error, ErrorKind};
 use nom::multi::many1;
 use nom::{Err, IResult};
-use std::str;
 
 use crate::krb5::*;
 
@@ -17,20 +18,9 @@ use crate::krb5::*;
 /// Int32           ::= INTEGER (-2147483648..2147483647)
 ///                     -- signed values representable in 32 bits
 /// </pre>
+#[inline]
 pub fn parse_der_int32(i: &[u8]) -> IResult<&[u8], i32, BerError> {
-    map_res(parse_der_integer, |x: DerObject| match x.content {
-        BerObjectContent::Integer(i) => match i.len() {
-            1 => Ok(i[0] as i8 as i32),
-            2 => Ok((i[0] as i8 as i32) << 8 | (i[1] as i32)),
-            3 => Ok((i[0] as i8 as i32) << 16 | (i[1] as i32) << 8 | (i[2] as i32)),
-            4 => Ok((i[0] as i8 as i32) << 24
-                | (i[1] as i32) << 16
-                | (i[2] as i32) << 8
-                | (i[3] as i32)),
-            _ => Err(BerError::IntegerTooLarge),
-        },
-        _ => Err(BerError::BerTypeError),
-    })(i)
+    parse_ber_i32(i)
 }
 
 //  Microseconds    ::= INTEGER (0..999999)
@@ -45,19 +35,7 @@ fn parse_der_microseconds(i: &[u8]) -> IResult<&[u8], u32, BerError> {
 /// KerberosString  ::= GeneralString (IA5String)
 /// </pre>
 pub fn parse_kerberos_string(i: &[u8]) -> IResult<&[u8], String, BerError> {
-    match parse_der_generalstring(i) {
-        Ok((rem, ref obj)) => {
-            if let BerObjectContent::GeneralString(s) = obj.content {
-                match str::from_utf8(s) {
-                    Ok(r) => Ok((rem, r.to_owned())),
-                    Err(_) => Err(Err::Error(make_error(i, ErrorKind::IsNot))),
-                }
-            } else {
-                Err(Err::Error(make_error(i, ErrorKind::Tag)))
-            }
-        }
-        Err(e) => Err(e),
-    }
+    map(GeneralString::from_der, |s| s.string())(i)
 }
 
 fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8], Vec<String>, BerError> {
@@ -81,9 +59,15 @@ pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8], DerObject, BerError> {
 /// <pre>
 /// Realm           ::= KerberosString
 /// </pre>
+impl<'a> FromDer<'a> for Realm {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        map(parse_kerberos_string, Realm)(bytes)
+    }
+}
+
 #[inline]
 pub fn parse_krb5_realm(i: &[u8]) -> IResult<&[u8], Realm, BerError> {
-    map(parse_kerberos_string, Realm)(i)
+    Realm::from_der(i)
 }
 
 /// Parse Kerberos PrincipalName
@@ -163,14 +147,17 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, Be
 /// }
 /// </pre>
 pub fn parse_krb5_ticket(i: &[u8]) -> IResult<&[u8], Ticket, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(1), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(1), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
         parse_ber_sequence_defined_g(|i, _| {
             let (i, tkt_vno) = parse_ber_tagged_explicit_g(0, |a, _| parse_der_u32(a))(i)?;
             if tkt_vno != 5 {
-                return Err(Err::Error(BerError::Custom(5)));
+                return Err(Err::Error(BerError::invalid_value(
+                    Tag::Sequence,
+                    "Invalid Kerberos version (not 5)".to_string(),
+                )));
             }
             let (i, realm) = parse_ber_tagged_explicit_g(1, |a, _| parse_krb5_realm(a))(i)?;
             let (i, sname) = parse_ber_tagged_explicit_g(2, |a, _| parse_krb5_principalname(a))(i)?;
@@ -326,7 +313,7 @@ pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, BerError> {
 /// AS-REQ          ::= [APPLICATION 10] KDC-REQ
 /// </pre>
 pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(10), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(10), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -340,7 +327,7 @@ pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
 /// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
 /// </pre>
 pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(12), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(12), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -394,7 +381,7 @@ pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// AS-REP          ::= [APPLICATION 11] KDC-REP
 /// </pre>
 pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(11), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(11), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -408,7 +395,7 @@ pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// TGS-REP          ::= [APPLICATION 13] KDC-REP
 /// </pre>
 pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(13), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(13), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -436,7 +423,7 @@ pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, BerError> {
 /// }
 /// </pre>
 pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(30), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(30), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -533,7 +520,7 @@ fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData>, BerError>
 ///         -- mutual-required(2)
 /// </pre>
 pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(14), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(14), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
@@ -567,7 +554,7 @@ pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, BerError> {
 /// }
 /// </pre>
 pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep, BerError> {
-    parse_ber_tagged_explicit_g(BerTag(15), |i, hdr| {
+    parse_ber_tagged_explicit_g(Tag(15), |i, hdr| {
         if !hdr.is_application() {
             return Err(Err::Error(BerError::InvalidTag));
         }
