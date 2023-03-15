@@ -1,3 +1,4 @@
+use der_parser::asn1_rs::FromDer;
 use kerberos_parser::krb5::*;
 use kerberos_parser::krb5_parser::*;
 
@@ -7,7 +8,7 @@ fn test_parse_kerberos_string() {
     let empty = &b""[..];
     let expected = Realm(String::from("cifs"));
 
-    let res = parse_krb5_realm(bytes);
+    let res = Realm::from_der(bytes);
     assert_eq!(res, Ok((empty, expected)));
 }
 
@@ -17,7 +18,7 @@ fn test_parse_realm() {
     let empty = &b""[..];
     let expected = Realm(String::from("Jones"));
 
-    let res = parse_krb5_realm(bytes);
+    let res = Realm::from_der(bytes);
     assert_eq!(res, Ok((empty, expected)));
 }
 
@@ -33,7 +34,7 @@ fn test_parse_principalname() {
         name_string: vec![String::from("Jones")],
     };
 
-    let res = parse_krb5_principalname(bytes);
+    let res = PrincipalName::from_der(bytes);
     assert_eq!(res, Ok((empty, expected)));
 }
 
@@ -50,7 +51,7 @@ fn test_parse_principalname2() {
         name_string: vec![String::from("cifs"), String::from("Admin-PC.contoso.local")],
     };
 
-    let res = parse_krb5_principalname(bytes);
+    let res = PrincipalName::from_der(bytes);
     assert_eq!(res, Ok((empty, expected)));
 }
 
@@ -59,7 +60,7 @@ static KRB5_TICKET: &[u8] = include_bytes!("../assets/krb5-ticket.bin");
 fn test_parse_ticket() {
     let bytes = KRB5_TICKET;
 
-    let res = parse_krb5_ticket(bytes);
+    let res = Ticket::from_der(bytes);
     // println!("parse_krb5_ticket: {:?}", res);
     match res {
         Ok((rem, tkt)) => {
@@ -144,7 +145,7 @@ static AP_REQ: &[u8] = include_bytes!("../assets/ap-req.bin");
 fn test_parse_ap_req() {
     let bytes = AP_REQ;
 
-    let res = parse_ap_req(bytes);
+    let res = ApReq::from_der(bytes);
     // println!("parse_ap_req: {:?}", res);
     match res {
         Ok((rem, req)) => {
@@ -169,7 +170,7 @@ static KRB_ERROR: &[u8] = include_bytes!("../assets/krb-error.bin");
 fn test_parse_krb_error() {
     let bytes = KRB_ERROR;
 
-    let res = parse_krb_error(bytes);
+    let res = KrbError::from_der(bytes);
     // println!("parse_krb_error: {:?}", res);
     match res {
         Ok((rem, err)) => {
@@ -220,23 +221,27 @@ fn test_parse_int32() {
     let empty = &b""[..];
     assert_eq!(parse_der_int32(&[0x02, 0x01, 0xff]), Ok((empty, -1)));
     assert_eq!(parse_der_int32(&[0x02, 0x01, 0x01]), Ok((empty, 1)));
-    assert_eq!(parse_der_int32(&[0x02, 0x02, 0xff, 0xff]), Ok((empty, -1)));
+    // XXX: not valid in DER: multiple leading 0xff
+    // assert_eq!(parse_der_int32(&[0x02, 0x02, 0xff, 0xff]), Ok((empty, -1)));
     assert_eq!(
         parse_der_int32(&[0x02, 0x02, 0x01, 0x23]),
         Ok((empty, 0x123))
     );
-    assert_eq!(
-        parse_der_int32(&[0x02, 0x03, 0xff, 0xff, 0xff]),
-        Ok((empty, -1))
-    );
+    // XXX: not valid in DER: multiple leading 0xff
+    // assert_eq!(
+    //     parse_der_int32(&[0x02, 0x03, 0xff, 0xff, 0xff]),
+    //     Ok((empty, -1))
+    // );
     assert_eq!(
         parse_der_int32(&[0x02, 0x03, 0x01, 0x23, 0x45]),
         Ok((empty, 0x12345))
     );
-    assert_eq!(
-        parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),
-        Ok((empty, -1))
-    );
+    // XXX: not valid in DER: multiple leading 0xff
+    // assert_eq!(
+    //     parse_der_int32(&[0x02, 0x04, 0xff, 0xff, 0xff, 0xff]),
+    //     Ok((empty, -1))
+    // );
+    assert_eq!(parse_der_int32(&[0x02, 0x01, 0xff]), Ok((empty, -1)));
     assert_eq!(
         parse_der_int32(&[0x02, 0x04, 0x01, 0x23, 0x45, 0x67]),
         Ok((empty, 0x1234567))
