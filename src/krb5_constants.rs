@@ -193,7 +193,7 @@ impl NameType {
     pub const KRB_NT_SRV_XHST       : NameType = NameType(4);
     /// Unique ID
     pub const KRB_NT_UID            : NameType = NameType(5);
-    /// Encoded X.509 Distinguished name [RFC2253]
+    /// Encoded X.509 Distinguished name \[RFC2253\]
     pub const KRB_NT_X500_PRINCIPAL : NameType = NameType(6);
     /// Name in form of SMTP email name (e.g., user@example.com)
     pub const KRB_NT_SMTP_NAME      : NameType = NameType(7);
