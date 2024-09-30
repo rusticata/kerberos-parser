@@ -40,6 +40,6 @@
 pub mod krb5;
 pub mod krb5_parser;
 
-mod krb5_constants;
+pub mod krb5_constants;
 mod krb5_errors;
 pub use krb5_errors::*;
