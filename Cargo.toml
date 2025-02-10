@@ -18,7 +18,6 @@ include = [
   ".travis.yml",
   "Cargo.toml",
   "assets/*.bin",
-  "benches/*.rs",
   "src/*.rs",
   "tests/*.rs"
 ]
