@@ -183,7 +183,7 @@ pub fn parse_krb5_ticket(i: &[u8]) -> IResult<&[u8], Ticket, Error> {
 }
 
 impl<'a> FromDer<'a> for Ticket<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         TaggedParser::from_der_and_then(Class::Application, 1, bytes, |inner| {
             Sequence::from_der_and_then(inner, |i| {
                 let (i, tkt_vno) = TaggedParser::from_der_and_then(CS, 0, i, u32::from_der)?;
@@ -229,7 +229,7 @@ pub fn parse_encrypted(i: &[u8]) -> IResult<&[u8], EncryptedData, Error> {
 }
 
 impl<'a> FromDer<'a> for EncryptedData<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         Sequence::from_der_and_then(bytes, |i| {
             let (i, etype) = TaggedParser::from_der_and_then(CS, 0, i, i32::from_der)?;
             let etype = EncryptionType(etype);
@@ -280,7 +280,7 @@ pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for KdcReq<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         Sequence::from_der_and_then(bytes, |i| {
             let (i, pvno) = TaggedParser::from_der_and_then(CS, 1, i, u32::from_der)?;
             let (i, msg_type) = TaggedParser::from_der_and_then(CS, 2, i, u32::from_der)?;
@@ -334,7 +334,7 @@ pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for KdcReqBody<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         Sequence::from_der_and_then(bytes, |i| {
             let (i, kdc_options) = TaggedParser::from_der_and_then(CS, 0, i, parse_kerberos_flags)?;
             let (i, cname) = OptTaggedParser::new(CS, Tag(1))
@@ -440,7 +440,7 @@ pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for KdcRep<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         Sequence::from_der_and_then(bytes, |i| {
             let (i, pvno) = TaggedParser::from_der_and_then(CS, 0, i, u32::from_der)?;
             let (i, msg_type) = TaggedParser::from_der_and_then(CS, 1, i, u32::from_der)?;
@@ -532,7 +532,7 @@ pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for KrbError<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         TaggedParser::from_der_and_then(Class::Application, 30, bytes, |inner| {
             Sequence::from_der_and_then(inner, |i| {
                 let (i, pvno) = TaggedParser::from_der_and_then(CS, 0, i, u32::from_der)?;
@@ -606,7 +606,7 @@ pub fn parse_krb5_padata(i: &[u8]) -> IResult<&[u8], PAData, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for PAData<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         Sequence::from_der_and_then(bytes, |i| {
             let (i, padata_type) = TaggedParser::from_der_and_then(CS, 1, i, i32::from_der)?;
             let padata_type = PAType(padata_type);
@@ -666,7 +666,7 @@ pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, Error> {
 ///         -- mutual-required(2)
 /// </pre>
 impl<'a> FromDer<'a> for ApReq<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         TaggedParser::from_der_and_then(Class::Application, 14, bytes, |inner| {
             Sequence::from_der_and_then(inner, |i| {
                 let (i, pvno) = TaggedParser::from_der_and_then(CS, 0, i, u32::from_der)?;
@@ -718,7 +718,7 @@ pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep, Error> {
 /// }
 /// </pre>
 impl<'a> FromDer<'a> for ApRep<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, Error> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, Error> {
         TaggedParser::from_der_and_then(Class::Application, 15, bytes, |inner| {
             Sequence::from_der_and_then(inner, |i| {
                 let (i, pvno) = TaggedExplicit::<u32, Error, 0>::from_der(i)?;
