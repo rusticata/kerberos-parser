@@ -29,3 +29,11 @@ der-parser = "9.0"
 
 [badges]
 travis-ci = { repository = "rusticata/kerberos-parser" }
+
+[package.metadata.cargo_check_external_types]
+allowed_external_types = [
+  "asn1_rs",
+  "asn1_rs::*",
+  "nom",
+  "nom::*",
+]
