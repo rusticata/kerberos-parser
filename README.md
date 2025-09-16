@@ -1,11 +1,10 @@
-# Kerberos parser
-
+![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE-MIT)
 [![Apache License 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE-APACHE)
 [![Build Status](https://travis-ci.org/rusticata/kerberos-parser.svg?branch=master)](https://travis-ci.org/rusticata/kerberos-parser)
 [![Crates.io Version](https://img.shields.io/crates/v/kerberos-parser.svg)](https://crates.io/crates/kerberos-parser)
 
-<!-- cargo-sync-readme start -->
+<!-- cargo-rdme start -->
 
 # Kerberos Parser
 
@@ -21,7 +20,7 @@ KRB_AS_REQ message, use [`parse_as_req`](krb5_parser/fn.parse_as_req.html).
 
 Parsing a KRB_AS_REQ message:
 
-```rust,no_run
+```rust
 use kerberos_parser::krb5::MessageType;
 use kerberos_parser::krb5_parser::parse_as_req;
 
@@ -40,7 +39,7 @@ match res {
 
 [RFC4120]: https://tools.ietf.org/html/rfc4120
 
-<!-- cargo-sync-readme end -->
+<!-- cargo-rdme end -->
 
 ## Rusticata
 

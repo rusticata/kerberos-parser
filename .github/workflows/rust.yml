@@ -7,11 +7,20 @@ on:
   schedule:
     - cron: '0 18 * * *'
 
-env:
-  check_ext_rust_version: nightly-2024-06-30
-  # ^ sync with https://github.com/awslabs/cargo-check-external-types/blob/main/rust-toolchain.toml
-
 jobs:
+  pre_commit:
+    timeout-minutes: 5
+    name: prek
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # tools used in pre-commit hooks
+      - id: cargo-rdme
+        uses: rusticata/ci-action-rdme@v1
+      # /tools
+      - id: prek
+        uses: rusticata/ci-action-prek@v1
+
   check:
     name: Check
     runs-on: ubuntu-latest
@@ -22,13 +31,11 @@ jobs:
           - 1.63.0
           - nightly
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install ${{ matrix.rust }} toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
       - name: Cargo update
         run: cargo update
       - run: RUSTFLAGS="-D warnings" cargo check
@@ -41,7 +48,7 @@ jobs:
         features:
           - --all-features
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - run: cargo test ${{ matrix.features }}
@@ -50,7 +57,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install stable rustfmt
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -61,12 +68,20 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install nightly clippy
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy
       - run: cargo clippy -- -D warnings
+
+  readme:
+    name: Check if README is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: cargo-rdme
+        uses: rusticata/ci-action-rdme@v1
 
   doc:
     name: Build documentation
@@ -74,7 +89,7 @@ jobs:
     env:
       RUSTDOCFLAGS: --cfg docsrs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install nightly rust
         uses: dtolnay/rust-toolchain@nightly
       - run: cargo doc --workspace --no-deps --all-features
@@ -84,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Check semver
         uses: obi1kenobi/cargo-semver-checks-action@v2
 
@@ -93,10 +108,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.check_ext_rust_version }}
-      - run: cargo install --locked cargo-check-external-types
-      - run: cargo check-external-types
+        uses: actions/checkout@v5
+      - id: cargo-rdme
+        uses: rusticata/ci-action-check-external-types@v1
