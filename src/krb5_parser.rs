@@ -49,7 +49,7 @@ fn parse_kerberos_string_sequence(i: &[u8]) -> IResult<&[u8], Vec<String>, Error
 ///                     -- but no fewer than 32
 /// </pre>
 #[inline]
-pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8], BitString, Error> {
+pub fn parse_kerberos_flags(i: &[u8]) -> IResult<&[u8], BitString<'_>, Error> {
     BitString::from_der(i)
 }
 
@@ -135,7 +135,7 @@ pub fn parse_kerberos_time(i: &[u8]) -> IResult<&[u8], GeneralizedTime, Error> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_krb5_hostaddress(i: &[u8]) -> IResult<&[u8], HostAddress, Error> {
+pub fn parse_krb5_hostaddress(i: &[u8]) -> IResult<&[u8], HostAddress<'_>, Error> {
     HostAddress::from_der(i)
 }
 
@@ -159,7 +159,7 @@ impl<'a> FromDer<'a> for HostAddress<'a> {
 ///                 -- but has a value mapping and encodes the same
 ///         ::= SEQUENCE OF HostAddress
 /// </pre>
-pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, Error> {
+pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress<'_>>, Error> {
     parse_ber_sequence_of_v(HostAddress::from_der)(i)
 }
 
@@ -178,7 +178,7 @@ pub fn parse_krb5_hostaddresses(i: &[u8]) -> IResult<&[u8], Vec<HostAddress>, Er
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_krb5_ticket(i: &[u8]) -> IResult<&[u8], Ticket, Error> {
+pub fn parse_krb5_ticket(i: &[u8]) -> IResult<&[u8], Ticket<'_>, Error> {
     Ticket::from_der(i)
 }
 
@@ -224,7 +224,7 @@ impl<'a> FromDer<'a> for Ticket<'a> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_encrypted(i: &[u8]) -> IResult<&[u8], EncryptedData, Error> {
+pub fn parse_encrypted(i: &[u8]) -> IResult<&[u8], EncryptedData<'_>, Error> {
     EncryptedData::from_der(i)
 }
 
@@ -263,7 +263,7 @@ impl<'a> FromDer<'a> for EncryptedData<'a> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
+pub fn parse_kdc_req(i: &[u8]) -> IResult<&[u8], KdcReq<'_>, Error> {
     KdcReq::from_der(i)
 }
 
@@ -305,7 +305,7 @@ impl<'a> FromDer<'a> for KdcReq<'a> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody, Error> {
+pub fn parse_kdc_req_body(i: &[u8]) -> IResult<&[u8], KdcReqBody<'_>, Error> {
     KdcReqBody::from_der(i)
 }
 
@@ -385,7 +385,7 @@ impl<'a> FromDer<'a> for KdcReqBody<'a> {
 /// <pre>
 /// AS-REQ          ::= [APPLICATION 10] KDC-REQ
 /// </pre>
-pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
+pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq<'_>, Error> {
     TaggedParser::from_der_and_then(Class::Application, 10, i, KdcReq::from_der)
 }
 
@@ -394,7 +394,7 @@ pub fn parse_as_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
 /// <pre>
 /// TGS-REQ          ::= [APPLICATION 12] KDC-REQ
 /// </pre>
-pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
+pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq<'_>, Error> {
     TaggedParser::from_der_and_then(Class::Application, 12, i, KdcReq::from_der)
 }
 
@@ -419,7 +419,7 @@ pub fn parse_tgs_req(i: &[u8]) -> IResult<&[u8], KdcReq, Error> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
+pub fn parse_kdc_rep(i: &[u8]) -> IResult<&[u8], KdcRep<'_>, Error> {
     KdcRep::from_der(i)
 }
 
@@ -471,7 +471,7 @@ impl<'a> FromDer<'a> for KdcRep<'a> {
 /// <pre>
 /// AS-REP          ::= [APPLICATION 11] KDC-REP
 /// </pre>
-pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
+pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep<'_>, Error> {
     TaggedParser::from_der_and_then(Class::Application, 11, i, KdcRep::from_der)
 }
 
@@ -480,7 +480,7 @@ pub fn parse_as_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
 /// <pre>
 /// TGS-REP          ::= [APPLICATION 13] KDC-REP
 /// </pre>
-pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
+pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep<'_>, Error> {
     TaggedParser::from_der_and_then(Class::Application, 13, i, KdcRep::from_der)
 }
 
@@ -508,7 +508,7 @@ pub fn parse_tgs_rep(i: &[u8]) -> IResult<&[u8], KdcRep, Error> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError, Error> {
+pub fn parse_krb_error(i: &[u8]) -> IResult<&[u8], KrbError<'_>, Error> {
     KrbError::from_der(i)
 }
 
@@ -592,7 +592,7 @@ impl<'a> FromDer<'a> for KrbError<'a> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_krb5_padata(i: &[u8]) -> IResult<&[u8], PAData, Error> {
+pub fn parse_krb5_padata(i: &[u8]) -> IResult<&[u8], PAData<'_>, Error> {
     PAData::from_der(i)
 }
 
@@ -620,7 +620,7 @@ impl<'a> FromDer<'a> for PAData<'a> {
     }
 }
 
-fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData>, Error> {
+fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData<'_>>, Error> {
     parse_ber_sequence_of_v(PAData::from_der)(i)
 }
 
@@ -645,7 +645,7 @@ fn parse_krb5_padata_sequence(i: &[u8]) -> IResult<&[u8], Vec<PAData>, Error> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq, Error> {
+pub fn parse_ap_req(i: &[u8]) -> IResult<&[u8], ApReq<'_>, Error> {
     ApReq::from_der(i)
 }
 
@@ -704,7 +704,7 @@ impl<'a> FromDer<'a> for ApReq<'a> {
     note = "Parsing functions are deprecated. Users should instead use the FromDer trait"
 )]
 #[inline]
-pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep, Error> {
+pub fn parse_ap_rep(i: &[u8]) -> IResult<&[u8], ApRep<'_>, Error> {
     ApRep::from_der(i)
 }
 
