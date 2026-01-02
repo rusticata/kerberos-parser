@@ -25,7 +25,7 @@ include = [
 
 [dependencies]
 nom = "7.0"
-rusticata-macros = "4.0"
+rusticata-macros = "5.0"
 der-parser = "10.0"
 
 [badges]
